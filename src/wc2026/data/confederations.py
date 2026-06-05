@@ -68,7 +68,5 @@ CONFEDERATIONS: dict[str, str] = {
 
 
 def confederation_of(team: str) -> str:
-    """Returns the confederation code for a team. Raises if not in the map."""
-    if team not in CONFEDERATIONS:
-        raise KeyError(f"No confederation mapping for {team!r}")
-    return CONFEDERATIONS[team]
+    """Returns the confederation code for a team, or 'OTHER' if not mapped."""
+    return CONFEDERATIONS.get(team, "OTHER")
