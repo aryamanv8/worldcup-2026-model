@@ -1,0 +1,34 @@
+# 2026 FIFA World Cup tournament structure
+# Source: Final draw (Dec 5, 2025) + completed qualifying playoffs
+# 48 teams in 12 groups of 4. Top 2 + 8 best 3rd-place teams -> Round of 32.
+#
+# Team names should match the conventions used in our match-results dataset
+# (martj42/international_results). If a name here doesn't appear there, the
+# validator script will surface the mismatch.
+
+tournament:
+  name: "2026 FIFA World Cup"
+  start_date: "2026-06-11"
+  end_date: "2026-07-19"
+  host_countries: [United States, Canada, Mexico]
+  format:
+    n_teams: 48
+    n_groups: 12
+    teams_per_group: 4
+    advancing_per_group: 2
+    best_third_advancing: 8
+    knockout_rounds: [R32, R16, QF, SF, F]
+
+groups:
+  A: [Mexico, South Africa, South Korea, Czech Republic]
+  B: [Canada, Bosnia and Herzegovina, Qatar, Switzerland]
+  C: [Brazil, Morocco, Haiti, Scotland]
+  D: [United States, Paraguay, Australia, Turkey]
+  E: [Germany, Curaçao, Ivory Coast, Ecuador]
+  F: [Netherlands, Japan, Sweden, Tunisia]
+  G: [Belgium, Egypt, Iran, New Zealand]
+  H: [Spain, Cape Verde, Saudi Arabia, Uruguay]
+  I: [France, Senegal, Iraq, Norway]
+  J: [Argentina, Algeria, Austria, Jordan]
+  K: [Portugal, DR Congo, Uzbekistan, Colombia]
+  L: [England, Croatia, Ghana, Panama]
