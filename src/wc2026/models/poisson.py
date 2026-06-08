@@ -26,6 +26,7 @@ from scipy.stats import poisson
 NUMERIC_FEATURES: list[str] = [
     "attacker_elo_z",
     "defender_elo_z",
+    "elo_implied_score",  # NEW: sigmoid of Elo gap, captures nonlinear dominance
     "attacker_gf_per_match",
     "attacker_ga_per_match",
     "attacker_win_rate",
@@ -110,6 +111,11 @@ def prepare_design_matrix(
     # Standardize Elo (mean ~1500, std ~400 in international football)
     df["attacker_elo_z"] = (df["attacker_elo"] - 1500.0) / 400.0
     df["defender_elo_z"] = (df["defender_elo"] - 1500.0) / 400.0
+    # Elo-implied expected score: sigmoid of Elo gap. Captures the nonlinear
+    # "saturation" of dominance that linear Elo z-scores miss.
+    df["elo_implied_score"] = 1.0 / (
+        1.0 + 10.0 ** (-(df["attacker_elo"] - df["defender_elo"]) / 400.0)
+    )
 
     df = df.dropna(subset=NUMERIC_FEATURES).reset_index(drop=True)
 
