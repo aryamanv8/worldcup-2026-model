@@ -26,13 +26,17 @@ def main() -> None:
     print(f"Loading inputs...")
     results = pd.read_parquet(PROCESSED_DIR / "results.parquet")
     elo_history = pd.read_parquet(PROCESSED_DIR / "elo_history.parquet")
+    value_history = pd.read_parquet(PROCESSED_DIR / "country_value_history.parquet")
     print(f"  Results: {len(results):,} rows")
     print(f"  Elo history: {len(elo_history):,} rows")
+    print(f"  Value history: {len(value_history):,} country-month rows "
+          f"({value_history['country'].nunique()} countries)")
 
     print(f"\nBuilding training matrix [{MIN_DATE.date()} → {MAX_DATE.date()}]...")
     tm = build_training_matrix(
         results=results,
         elo_history=elo_history,
+        value_history=value_history,
         min_date=MIN_DATE,
         max_date=MAX_DATE,
     )

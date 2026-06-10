@@ -21,19 +21,57 @@ import pandas as pd
 import statsmodels.api as sm
 from scipy.stats import poisson
 
+# Standardization constants for log squad value.
+# Derived empirically from the pooled (home+away) distribution in the
+# training matrix: log_eur ranges 0 to ~18.1 with mean ~13.22, std ~4.18.
+# Bimodal-ish (mass at the clip floor for no-TM-coverage teams + main
+# mode in the €100K-€10M range). The has_actual_value flag lets the
+# GLM partial out the floor mass.
+VALUE_LOG_MEAN = 13.22
+VALUE_LOG_STD = 4.18
 
 # --- Features used by the model ---------------------------------------------
 NUMERIC_FEATURES: list[str] = [
-    "attacker_elo_z",
-    "defender_elo_z",
-    "elo_implied_score",  # NEW: sigmoid of Elo gap, captures nonlinear dominance
-    "attacker_gf_per_match",
-    "attacker_ga_per_match",
-    "attacker_win_rate",
-    "defender_gf_per_match",
-    "defender_ga_per_match",
-    "defender_win_rate",
+    # Elo-anchored spec. The primary strength feature is now
+    # elo_implied_score = sigmoid((attacker_elo - defender_elo) / 400),
+    # i.e. Elo's own expected-score formula. This injects the nonlinear
+    # saturation at extreme talent gaps that linear-in-Elo cannot represent.
+    # The linear Elo z-scores are dropped because they were too collinear
+    # with the sigmoid feature to add independent information.
+    "elo_implied_score",
+    "attacker_value_z",
+    "defender_value_z",
+    "attacker_has_actual_value",
+    "defender_has_actual_value",
 ]
+# Wide-format columns required to compute every NUMERIC_FEATURE. Used by
+# filter_complete_features() to drop incomplete matches BEFORE pivoting,
+# which keeps the wide<->long row count in sync downstream.
+WIDE_FEATURE_COLS: list[str] = [
+    # Strength-only spec. Form columns dropped — we no longer require them
+    # to be non-NaN, which recovers ~1.7% of training rows that previously
+    # had form NaN but valid Elo + value.
+    "home_elo", "away_elo",
+    "home_value_log_eur", "away_value_log_eur",
+    # has_actual_value flags are integer 0/1 by construction, never NaN
+]
+
+
+def filter_complete_features(wide: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
+    """Drop matches missing any input feature on either side.
+
+    Call before pivot_to_long so that the long-format DataFrame and the
+    design matrix produced by prepare_design_matrix have the same row count.
+    """
+    n_before = len(wide)
+    out = wide.dropna(subset=WIDE_FEATURE_COLS).reset_index(drop=True)
+    if verbose:
+        n_dropped = n_before - len(out)
+        print(f"  filter_complete_features: dropped {n_dropped:,} of "
+              f"{n_before:,} matches ({100*n_dropped/n_before:.1f}%) "
+              f"missing one or more input features.")
+    return out
+
 BINARY_FEATURES: list[str] = [
     "is_attacker_home",
     "is_neutral",
@@ -57,6 +95,10 @@ def pivot_to_long(wide: pd.DataFrame) -> pd.DataFrame:
         "defender_team": wide["away_team"].astype(str).values,
         "attacker_elo": wide["home_elo"].astype(float).values,
         "defender_elo": wide["away_elo"].astype(float).values,
+        "attacker_value_log_eur": wide["home_value_log_eur"].values,
+        "defender_value_log_eur": wide["away_value_log_eur"].values,
+        "attacker_has_actual_value": wide["home_has_actual_value"].values,
+        "defender_has_actual_value": wide["away_has_actual_value"].values,
         "attacker_gf_per_match": wide["home_gf_per_match"].values,
         "attacker_ga_per_match": wide["home_ga_per_match"].values,
         "attacker_win_rate": wide["home_win_rate"].values,
@@ -76,6 +118,10 @@ def pivot_to_long(wide: pd.DataFrame) -> pd.DataFrame:
         "defender_team": wide["home_team"].astype(str).values,
         "attacker_elo": wide["away_elo"].astype(float).values,
         "defender_elo": wide["home_elo"].astype(float).values,
+        "attacker_value_log_eur": wide["away_value_log_eur"].values,
+        "defender_value_log_eur": wide["home_value_log_eur"].values,
+        "attacker_has_actual_value": wide["away_has_actual_value"].values,
+        "defender_has_actual_value": wide["home_has_actual_value"].values,
         "attacker_gf_per_match": wide["away_gf_per_match"].values,
         "attacker_ga_per_match": wide["away_ga_per_match"].values,
         "attacker_win_rate": wide["away_win_rate"].values,
@@ -96,21 +142,37 @@ def pivot_to_long(wide: pd.DataFrame) -> pd.DataFrame:
 def prepare_design_matrix(
     long_df: pd.DataFrame,
     confederation_levels: list[str] | None = None,
-) -> tuple[pd.DataFrame, pd.Series, list[str]]:
+    return_long: bool = False,
+) -> tuple:
     """
     Drop rows with missing features and build the design matrix.
 
-    Returns:
+    Returns by default:
         X: design matrix (numeric + one-hot confederations + intercept)
         y: target vector (goals_scored, int)
         feature_names: column names of X
+
+    If return_long=True, returns a 4-tuple:
+        long_filtered: the long_df with NaN rows removed — same row count
+            as X, kept aligned by reset_index. Use this to attach
+            predictions back to per-match auxiliary data.
+        X, y, feature_names: as above.
     """
     needed = NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES + ["goals_scored"]
     df = long_df.copy()
 
     # Standardize Elo (mean ~1500, std ~400 in international football)
+    # Standardize Elo (mean ~1500, std ~400 in international football)
     df["attacker_elo_z"] = (df["attacker_elo"] - 1500.0) / 400.0
     df["defender_elo_z"] = (df["defender_elo"] - 1500.0) / 400.0
+    # Standardize log squad value using empirical constants from
+    # training_matrix distribution (see VALUE_LOG_MEAN / VALUE_LOG_STD).
+    df["attacker_value_z"] = (
+        df["attacker_value_log_eur"] - VALUE_LOG_MEAN
+    ) / VALUE_LOG_STD
+    df["defender_value_z"] = (
+        df["defender_value_log_eur"] - VALUE_LOG_MEAN
+    ) / VALUE_LOG_STD
     # Elo-implied expected score: sigmoid of Elo gap. Captures the nonlinear
     # "saturation" of dominance that linear Elo z-scores miss.
     df["elo_implied_score"] = 1.0 / (
@@ -137,6 +199,8 @@ def prepare_design_matrix(
                    def_dummies.reset_index(drop=True)], axis=1)
     X = sm.add_constant(X, has_constant="add")
     y = df["goals_scored"].astype(int).reset_index(drop=True)
+    if return_long:
+        return df, X, y, X.columns.tolist()
     return X, y, X.columns.tolist()
 
 
@@ -229,6 +293,10 @@ def predict_match(
         "is_competitive": is_competitive,
         "home_elo": h["elo_current"],
         "away_elo": a["elo_current"],
+        "home_value_log_eur": h["value_log_eur"],
+        "away_value_log_eur": a["value_log_eur"],
+        "home_has_actual_value": int(h["has_actual_value"]),
+        "away_has_actual_value": int(a["has_actual_value"]),
         "home_gf_per_match": h["gf_per_match_12mo"],
         "home_ga_per_match": h["ga_per_match_12mo"],
         "home_win_rate": h["win_rate_12mo"],

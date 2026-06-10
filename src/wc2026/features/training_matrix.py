@@ -101,6 +101,7 @@ def _form_for_team(
 def build_training_matrix(
     results: pd.DataFrame,
     elo_history: pd.DataFrame,
+    value_history: pd.DataFrame,
     min_date: pd.Timestamp | None = None,
     max_date: pd.Timestamp | None = None,
     window_days: int = DEFAULT_WINDOW_DAYS,
@@ -182,6 +183,92 @@ def build_training_matrix(
         allow_exact_matches=False,
     )
     played["away_elo"] = away_elo_join["rating_after"].fillna(DEFAULT_ELO).values
+
+    # ------------------------------------------------------------------
+    # Squad market value (Transfermarkt top-23 mean), point-in-time.
+    #
+    # Strategy:
+    #   - vh has monthly snapshots dated YYYY-MM-01 covering every
+    #     (country, month) from 2008-01 to 2026-12.
+    #   - Build a year_month integer key on both sides; exact-merge on
+    #     (country, year_month). This gives us the snapshot active at
+    #     the start of the match's month — point-in-time correct since
+    #     snapshots are dated to the 1st.
+    #   - For matches before 2008-01 OR for teams not in vh, the merge
+    #     returns NaN; we fall back to the country's earliest known
+    #     value as a "prior" via a second left-join.
+    #   - has_actual_value = 1 iff the primary (country, ym) match
+    #     succeeded; 0 if we used the prior or have no value at all.
+    # ------------------------------------------------------------------
+    print("  Merging point-in-time squad market values...")
+    from wc2026.features.squad_values import TEAM_TO_TM_COUNTRY
+
+    def _to_tm(name: str) -> str:
+        return TEAM_TO_TM_COUNTRY.get(name, name)
+
+    def _ym(s: pd.Series) -> pd.Series:
+        return (s.dt.year * 100 + s.dt.month).astype("int64")
+
+    # Right side: vh slim, with year_month + log_value
+    vh_slim = value_history[["country", "date", "top_n_mean_eur"]].copy()
+    vh_slim["country"] = vh_slim["country"].astype(object)
+    vh_slim["ym"] = _ym(vh_slim["date"])
+    vh_slim["log_value"] = np.log(vh_slim["top_n_mean_eur"].clip(lower=1.0))
+
+    # Per-country prior: earliest log_value for each country (for the backfill)
+    earliest = (
+        vh_slim.sort_values("date")
+        .groupby("country", as_index=False)
+        .first()[["country", "log_value"]]
+        .rename(columns={"log_value": "earliest_log_value"})
+    )
+
+    # Left side: map team names to TM countries, compute year_month
+    played["_home_country"] = (
+        played["home_team"].map(_to_tm).astype(object)
+    )
+    played["_away_country"] = (
+        played["away_team"].map(_to_tm).astype(object)
+    )
+    played["_ym"] = _ym(played["date"])
+
+    # --- Home side ---
+    home_join = (
+        played[["_home_country", "_ym"]]
+        .rename(columns={"_home_country": "country", "_ym": "ym"})
+        .merge(
+            vh_slim[["country", "ym", "log_value"]],
+            on=["country", "ym"],
+            how="left",
+        )
+        .merge(earliest, on="country", how="left")
+    )
+    played["home_has_actual_value"] = (
+        home_join["log_value"].notna().astype(int).values
+    )
+    played["home_value_log_eur"] = (
+        home_join["log_value"].fillna(home_join["earliest_log_value"]).values
+    )
+
+    # --- Away side ---
+    away_join = (
+        played[["_away_country", "_ym"]]
+        .rename(columns={"_away_country": "country", "_ym": "ym"})
+        .merge(
+            vh_slim[["country", "ym", "log_value"]],
+            on=["country", "ym"],
+            how="left",
+        )
+        .merge(earliest, on="country", how="left")
+    )
+    played["away_has_actual_value"] = (
+        away_join["log_value"].notna().astype(int).values
+    )
+    played["away_value_log_eur"] = (
+        away_join["log_value"].fillna(away_join["earliest_log_value"]).values
+    )
+
+    played = played.drop(columns=["_home_country", "_away_country", "_ym"])
     
     # Rolling form features per match per team
     print("  Computing form features...")

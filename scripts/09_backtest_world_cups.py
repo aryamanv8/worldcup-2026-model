@@ -17,6 +17,8 @@ Run from the project root:
 """
 from pathlib import Path
 
+from wc2026.models.poisson import filter_complete_features
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -49,13 +51,16 @@ def backtest_one_wc(
     training_matrix: pd.DataFrame,
     results: pd.DataFrame,
     elo_history: pd.DataFrame,
+    value_history: pd.DataFrame,
 ) -> tuple[dict, pd.DataFrame]:
     """Run walk-forward backtest for one World Cup."""
     print(f"\n========== {wc_name} World Cup ==========")
     snapshot = wc_start - pd.Timedelta(days=1)
 
-    # 1. Slice training matrix to pre-WC matches
+    # 1. Slice training matrix to pre-WC matches, then drop incomplete-feature rows.
+    #    Filter BEFORE pivoting so wide <-> long row counts stay in sync downstream.
     train_wide = training_matrix[training_matrix["date"] <= snapshot].copy()
+    train_wide = filter_complete_features(train_wide)
     print(f"  Training matches: {len(train_wide):,}")
 
     # 2. Fit Poisson regression
@@ -67,7 +72,7 @@ def backtest_one_wc(
     X_train, y_train, _ = prepare_design_matrix(long_train, confederation_levels)
     model = fit_poisson(X_train, y_train)
 
-    # 3. Fit DC rho
+    # 3. Fit DC rho (train_wide already filtered above)
     rho = fit_dixon_coles_rho(model, train_wide, confederation_levels)
     print(f"  Dixon-Coles rho = {rho:+.4f}")
 
@@ -87,6 +92,7 @@ def backtest_one_wc(
         teams=wc_teams,
         results=results,
         elo_history=elo_history,
+        value_history=value_history,
         as_of=snapshot,
     )
 
@@ -166,14 +172,16 @@ def main() -> None:
     results = pd.read_parquet(PROCESSED_DIR / "results.parquet")
     elo_history = pd.read_parquet(PROCESSED_DIR / "elo_history.parquet")
     training_matrix = pd.read_parquet(PROCESSED_DIR / "training_matrix.parquet")
+    value_history = pd.read_parquet(PROCESSED_DIR / "country_value_history.parquet")
     print(f"  Results: {len(results):,}")
     print(f"  Training matrix: {len(training_matrix):,}")
+    print(f"  Value history: {len(value_history):,}")
 
     all_metrics = []
     all_preds = []
     for wc_name, wc_start, wc_end in WORLD_CUPS:
         metrics, preds = backtest_one_wc(
-            wc_name, wc_start, wc_end, training_matrix, results, elo_history
+            wc_name, wc_start, wc_end, training_matrix, results, elo_history, value_history
         )
         all_metrics.append(metrics)
         all_preds.append(preds)

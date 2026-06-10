@@ -8,6 +8,7 @@ that the match-level model consumes. Features cover:
   - Sample-size diagnostics (matches played in window)
   - Rest proxy (days since last match)
   - Confederation (categorical)
+  - Squad market value snapshot (log EUR, with has_actual_value flag)
 
 All "recent" features use a 12-month rolling window ending at a specified
 'as_of' date. We separate friendlies vs. competitive matches because
@@ -18,10 +19,13 @@ from __future__ import annotations
 from datetime import timedelta
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from wc2026.data.confederations import confederation_of
 from wc2026.features.elo import DEFAULT_RATING
+from wc2026.features.squad_values import TEAM_TO_TM_COUNTRY
+from wc2026.models.poisson import VALUE_LOG_MEAN
 
 FRIENDLY_TOURNAMENTS = {"Friendly"}
 
@@ -71,10 +75,40 @@ def _elo_as_of(elo_history: pd.DataFrame, team: str, as_of: pd.Timestamp) -> flo
     return float(sub.sort_values("date").iloc[-1]["rating_after"])
 
 
+def _build_value_lookups(
+    value_history: pd.DataFrame,
+    as_of: pd.Timestamp,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """
+    Build two per-country log-value dictionaries:
+      - active: the country's log_value at the exact year_month of `as_of`.
+      - earliest: the country's earliest known log_value (backfill prior for
+        pre-coverage dates).
+    """
+    ym = as_of.year * 100 + as_of.month
+    vh = value_history[["country", "date", "top_n_mean_eur"]].copy()
+    vh["country"] = vh["country"].astype(object)
+    vh["ym"] = (vh["date"].dt.year * 100 + vh["date"].dt.month).astype("int64")
+    vh["log_value"] = np.log(vh["top_n_mean_eur"].clip(lower=1.0))
+
+    vh_at_ym = vh[vh["ym"] == ym]
+    active = dict(zip(vh_at_ym["country"], vh_at_ym["log_value"]))
+
+    earliest_df = (
+        vh.sort_values("date")
+        .groupby("country", as_index=False)
+        .first()[["country", "log_value"]]
+    )
+    earliest = dict(zip(earliest_df["country"], earliest_df["log_value"]))
+
+    return active, earliest
+
+
 def build_team_features(
     teams: list[str],
     results: pd.DataFrame,
     elo_history: pd.DataFrame,
+    value_history: pd.DataFrame,
     as_of: pd.Timestamp,
     window_days: int = 365,
 ) -> pd.DataFrame:
@@ -85,16 +119,26 @@ def build_team_features(
         teams: List of team names to build features for.
         results: Cleaned match results (must have 'date' as datetime).
         elo_history: Output of compute_elo_history().
+        value_history: Output of build_country_value_history() — monthly
+            country-level squad value snapshots.
         as_of: Snapshot date — features reflect everything known up to and
             including this date.
         window_days: Window for recent-form stats (default 365 = 12 months).
 
     Returns:
-        DataFrame with one row per team. Missing values where a team has
-        no matches in the window.
+        DataFrame with one row per team. value_log_eur is always non-null
+        (imputed to VALUE_LOG_MEAN if no TM coverage) so predict_match
+        never gets a NaN-feature row. has_actual_value distinguishes the
+        three cases: exact match (1), backfilled prior (0), imputed (0).
     """
     as_of = pd.Timestamp(as_of)
     window_start = as_of - timedelta(days=window_days)
+
+    # Precompute squad-value lookups (one pass over value_history)
+    active_value, earliest_value = _build_value_lookups(value_history, as_of)
+
+    def _to_tm(name: str) -> str:
+        return TEAM_TO_TM_COUNTRY.get(name, name)
 
     rows = []
     for team in teams:
@@ -121,6 +165,24 @@ def build_team_features(
         else:
             days_since_any = None
 
+        # Squad value lookup: three-way fallback.
+        #   1. Active (country, ym) match -> real value, has_actual=1
+        #   2. Backfill prior (country's earliest known) -> proxy, has_actual=0
+        #   3. No TM coverage at all -> impute population mean (z=0), has_actual=0
+        # The model NEVER sees NaN here, so predict_match always produces a
+        # non-empty design matrix. has_actual_value lets the GLM partial out
+        # the noise from imputed/backfilled rows.
+        tm_country = _to_tm(team)
+        if tm_country in active_value:
+            value_log_eur = active_value[tm_country]
+            has_actual_value = 1
+        elif tm_country in earliest_value:
+            value_log_eur = earliest_value[tm_country]
+            has_actual_value = 0
+        else:
+            value_log_eur = VALUE_LOG_MEAN
+            has_actual_value = 0
+
         rows.append({
             "team": team,
             "confederation": confederation_of(team),
@@ -137,6 +199,8 @@ def build_team_features(
             "win_rate_12mo_competitive": stats_comp["win_rate"],
             "days_since_last_match": days_since_any,
             "days_since_last_competitive": days_since_competitive,
+            "value_log_eur": value_log_eur,
+            "has_actual_value": has_actual_value,
         })
 
     return pd.DataFrame(rows)
