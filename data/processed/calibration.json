@@ -1,0 +1,15 @@
+{
+  "method": "temperature_power_scaling",
+  "formula": "p_i' = p_i**(1/T) / sum_j p_j**(1/T)",
+  "temperature": 0.77,
+  "fitted_on": "all 4 backtest WCs (2010/14/18/22), 256 matches",
+  "loocv_fold_temperatures": {
+    "2010": 0.81,
+    "2014": 0.72,
+    "2018": 0.81,
+    "2022": 0.75
+  },
+  "loocv_pooled_logloss_before": 0.973252938374852,
+  "loocv_pooled_logloss_after": 0.9693182140583269,
+  "scope": "outcome (W/D/L) probabilities only; simulator wiring is step 2"
+}

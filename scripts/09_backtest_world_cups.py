@@ -12,6 +12,10 @@ For each tournament we:
 
 Reports per-WC and pooled metrics + saves all predictions for inspection.
 
+Also exports data/processed/backtest_predictions.parquet in the schema the
+model-card script (19) consumes: per-match probs, realized goals, and the
+per-team Elo / confederation / stage fields used for stratified calibration.
+
 Run from the project root:
     uv run python scripts/09_backtest_world_cups.py
 """
@@ -42,6 +46,34 @@ WORLD_CUPS = [
     ("2018", pd.Timestamp("2018-06-14"), pd.Timestamp("2018-07-15")),
     ("2022", pd.Timestamp("2022-11-20"), pd.Timestamp("2022-12-18")),
 ]
+
+
+def _team_attr(team_features: pd.DataFrame, team: str, candidates: list[str]):
+    """Best-effort lookup of a per-team feature value.
+
+    Handles team_features indexed by team name OR carrying a team/country/name
+    column. Returns NaN if neither the team row nor any candidate column is
+    found, so the export degrades gracefully rather than crashing.
+    """
+    row = None
+    try:
+        if team in team_features.index:
+            row = team_features.loc[team]
+        else:
+            for key in ("team", "country", "name", "team_name"):
+                if key in team_features.columns:
+                    hit = team_features[team_features[key].astype(str) == team]
+                    if len(hit):
+                        row = hit.iloc[0]
+                        break
+    except Exception:
+        return np.nan
+    if row is None:
+        return np.nan
+    for col in candidates:
+        if col in row.index and pd.notna(row[col]):
+            return row[col]
+    return np.nan
 
 
 def backtest_one_wc(
@@ -96,14 +128,21 @@ def backtest_one_wc(
         as_of=snapshot,
     )
 
+    # One-time schema diagnostic so we can confirm the Elo / confederation column
+    # names the export below relies on. Adjust the candidate lists if these differ.
+    if wc_name == "2010":
+        print(f"  [diag] team_features columns: {list(team_features.columns)}")
+        print(f"  [diag] team_features index name: {team_features.index.name}")
+
     # 6. Predict each WC match
     rows = []
     for _, m in tqdm(wc_matches.iterrows(), total=len(wc_matches), desc="  Predicting"):
+        home, away = str(m["home_team"]), str(m["away_team"])
         pred = predict_match_dc(
             fitted_model=model,
             team_features=team_features,
-            home_team=str(m["home_team"]),
-            away_team=str(m["away_team"]),
+            home_team=home,
+            away_team=away,
             rho=rho,
             is_neutral=bool(m["neutral"]),
             is_competitive=True,
@@ -116,11 +155,18 @@ def backtest_one_wc(
         else:
             actual = "draw"
 
+        # Stratification fields for the model card (best-effort; NaN if unavailable)
+        home_elo = _team_attr(team_features, home, ["elo_current", "elo", "elo_rating", "rating"])
+        away_elo = _team_attr(team_features, away, ["elo_current", "elo", "elo_rating", "rating"])
+        home_conf = _team_attr(team_features, home, ["confederation", "conf", "attacker_confederation"])
+        away_conf = _team_attr(team_features, away, ["confederation", "conf", "defender_confederation"])
+        elo_diff = (home_elo - away_elo) if (pd.notna(home_elo) and pd.notna(away_elo)) else np.nan
+
         rows.append({
             "wc": wc_name,
             "date": m["date"],
-            "home_team": m["home_team"],
-            "away_team": m["away_team"],
+            "home_team": home,
+            "away_team": away,
             "home_score": int(m["home_score"]),
             "away_score": int(m["away_score"]),
             "neutral": bool(m["neutral"]),
@@ -130,6 +176,13 @@ def backtest_one_wc(
             "p_away": pred["probs"]["away"],
             "lambda_home": pred["lambda_home"],
             "lambda_away": pred["lambda_away"],
+            # --- new: stratification fields ---
+            "home_elo": home_elo,
+            "away_elo": away_elo,
+            "elo_diff": elo_diff,
+            "home_conf": home_conf,
+            "away_conf": away_conf,
+            "stage": m.get("stage", m.get("round", None)),
         })
 
     pred_df = pd.DataFrame(rows)
@@ -218,9 +271,27 @@ def main() -> None:
 
     metrics_df.to_csv(PROCESSED_DIR / "backtest_per_wc.csv", index=False)
     preds_df.to_csv(PROCESSED_DIR / "backtest_predictions.csv", index=False)
+
+    # --- Export the model-card schema (script 19 reads this) ------------------
+    export = preds_df.rename(columns={
+        "p_home": "p_home_win",
+        "p_away": "p_away_win",
+        "wc": "tournament",
+    })
+    keep = ["tournament", "date", "home_team", "away_team",
+            "p_home_win", "p_draw", "p_away_win",
+            "home_score", "away_score", "neutral",
+            "elo_diff", "home_elo", "away_elo",
+            "home_conf", "away_conf", "stage"]
+    export = export[[c for c in keep if c in export.columns]]
+    export_path = PROCESSED_DIR / "backtest_predictions.parquet"
+    export.to_parquet(export_path, index=False)
+
+    n_elo = int(export["elo_diff"].notna().sum()) if "elo_diff" in export else 0
     print(f"\nSaved to:")
     print(f"  {PROCESSED_DIR / 'backtest_per_wc.csv'}")
     print(f"  {PROCESSED_DIR / 'backtest_predictions.csv'}")
+    print(f"  {export_path}  (model-card input; elo_diff present on {n_elo}/{len(export)} rows)")
 
 
 if __name__ == "__main__":
