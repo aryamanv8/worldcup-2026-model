@@ -13,12 +13,20 @@ NOTE on bracket simplifications:
   details.
 - Knockout matches resolve at 90 minutes; draws go to a 50/50 coin flip
   representing extra time + penalties.
+
+Calibration:
+- Score matrices can be recalibrated with a single temperature T (script 20).
+  recalibrate_score_matrix() rescales each matrix so its win/draw/loss marginals
+  match the temperature-recalibrated outcome probabilities exactly, preserving
+  the conditional scoreline shape. Applied once at precompute time so all
+  downstream sampling (group + knockout) uses the calibrated matrices.
 """
 from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import combinations
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -31,6 +39,10 @@ from wc2026.models.poisson import predict_match_dc
 GROUP_ORDER = list("ABCDEFGHIJKL")
 HOST_TEAMS = {"Mexico", "Canada", "United States"}
 HOST_GROUP = {"Mexico": "A", "Canada": "B", "United States": "D"}
+
+# Ordered round labels for the per-simulation results export (matches script 21).
+FURTHEST_LABELS = ["group", "round_of_32", "round_of_16",
+                   "quarter_final", "semi_final", "final", "champion"]
 
 
 @dataclass
@@ -63,6 +75,44 @@ class GroupStanding:
             self.points += 1
 
 
+# --- Outcome recalibration (temperature) -----------------------------------
+
+def _power_scale_outcomes(p_w: float, p_d: float, p_l: float, T: float) -> Tuple[float, float, float]:
+    """Temperature (power) scaling of a win/draw/loss triple; T<1 sharpens."""
+    arr = np.clip(np.array([p_w, p_d, p_l], dtype=float), 1e-12, 1.0) ** (1.0 / T)
+    arr /= arr.sum()
+    return float(arr[0]), float(arr[1]), float(arr[2])
+
+
+def recalibrate_score_matrix(M: np.ndarray, T: float) -> np.ndarray:
+    """
+    Reweight a joint score matrix so its win/draw/loss marginals match the
+    temperature-recalibrated outcome probabilities, preserving the conditional
+    scoreline shape within each outcome region.
+
+    M[i, j] = P(row team scores i, col team scores j). Row team WINS when i>j.
+    Exact on W/D/L (= the recalibration validated in script 20); the
+    goal-difference distribution given an outcome is left as the model produced it.
+    """
+    if T is None or T == 1.0:
+        return M
+    M = M / M.sum()
+    n = M.shape[0]
+    win = np.tril_indices(n, k=-1)    # i > j : row team wins
+    draw = np.diag_indices(n)         # i == j
+    loss = np.triu_indices(n, k=1)    # i < j : row team loses
+    p_w, p_d, p_l = M[win].sum(), M[draw].sum(), M[loss].sum()
+    pw2, pd2, pl2 = _power_scale_outcomes(p_w, p_d, p_l, T)
+    out = M.copy()
+    if p_w > 0:
+        out[win] *= pw2 / p_w
+    if p_d > 0:
+        out[draw] *= pd2 / p_d
+    if p_l > 0:
+        out[loss] *= pl2 / p_l
+    return out
+
+
 # --- Score matrix pre-computation ------------------------------------------
 
 def precompute_score_matrices(
@@ -73,6 +123,7 @@ def precompute_score_matrices(
     confederation_levels: List[str],
     groups: Dict[str, List[str]],
     max_goals: int = 10,
+    temperature: float | None = None,
 ) -> Dict[Tuple[str, str], np.ndarray]:
     """
     Compute and cache the joint score distribution for every unordered pair
@@ -81,6 +132,10 @@ def precompute_score_matrices(
 
     For host-country group matches, the host gets home advantage. All other
     matches (including all knockouts) are computed with is_neutral=True.
+
+    If `temperature` is provided (and != 1.0), every stored matrix is
+    recalibrated so its outcome marginals match the temperature-scaled
+    probabilities (see recalibrate_score_matrix).
     """
     matrices: Dict[Tuple[str, str], np.ndarray] = {}
 
@@ -138,6 +193,11 @@ def precompute_score_matrices(
             )
             matrices[(team_b, team_a)] = host_pred["score_matrix"].copy()
             matrices[(team_a, team_b)] = host_pred["score_matrix"].T.copy()
+
+    # Apply outcome recalibration to every stored matrix (both orientations).
+    if temperature is not None and temperature != 1.0:
+        for key in list(matrices.keys()):
+            matrices[key] = recalibrate_score_matrix(matrices[key], temperature)
 
     return matrices
 
@@ -337,6 +397,23 @@ class TournamentResult:
     won_tournament: Dict[str, bool] = field(default_factory=dict)
 
 
+def _furthest_label(result: TournamentResult, team: str) -> str:
+    """Map a team's round flags to its single deepest stage (script-21 labels)."""
+    if result.won_tournament.get(team):
+        return "champion"
+    if result.reached_F.get(team):
+        return "final"
+    if result.reached_SF.get(team):
+        return "semi_final"
+    if result.reached_QF.get(team):
+        return "quarter_final"
+    if result.reached_R16.get(team):
+        return "round_of_16"
+    if result.reached_R32.get(team):
+        return "round_of_32"
+    return "group"
+
+
 def simulate_one_tournament(
     groups: Dict[str, List[str]],
     score_matrices: Dict[Tuple[str, str], np.ndarray],
@@ -403,6 +480,7 @@ def run_simulations(
     groups: Dict[str, List[str]],
     score_matrices: Dict[Tuple[str, str], np.ndarray],
     seed: int = 42,
+    results_out: Path | None = None,
 ) -> pd.DataFrame:
     """
     Run N tournament simulations and aggregate per-team probabilities.
@@ -410,13 +488,30 @@ def run_simulations(
     Returns a DataFrame with one row per team, columns:
       team, p_win_group, p_advance_from_group (= p_reach_R32),
       p_reach_R16, p_reach_QF, p_reach_SF, p_reach_F, p_win_tournament
+
+    If `results_out` is given, also writes the raw per-(sim, team) results to
+    that parquet path in the schema script 21 consumes:
+      sim_id, team, group, group_rank, furthest_round
     """
     rng = np.random.default_rng(seed)
 
     # Counters
     counters: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
-    for _ in tqdm(range(n_sims), desc="  Simulating tournaments"):
+    all_teams_flat = [t for teams in groups.values() for t in teams]
+
+    # Optional raw per-simulation recording (for the contract fair-value module)
+    record = results_out is not None
+    if record:
+        team_to_group = {t: g for g, teams in groups.items() for t in teams}
+        group_block = [team_to_group[t] for t in all_teams_flat]
+        sim_ids: List[int] = []
+        team_col: List[str] = []
+        group_col: List[str] = []
+        rank_col: List[int] = []
+        furthest_col: List[str] = []
+
+    for s in tqdm(range(n_sims), desc="  Simulating tournaments"):
         result = simulate_one_tournament(groups, score_matrices, rng)
         for team, won in result.won_group.items():
             if won:
@@ -440,9 +535,26 @@ def run_simulations(
             if won:
                 counters[team]["win_tournament"] += 1
 
-    all_teams = [t for teams in groups.values() for t in teams]
+        if record:
+            sim_ids.extend([s] * len(all_teams_flat))
+            team_col.extend(all_teams_flat)
+            group_col.extend(group_block)
+            rank_col.extend(result.group_position[t] for t in all_teams_flat)
+            furthest_col.extend(_furthest_label(result, t) for t in all_teams_flat)
+
+    if record:
+        sim_df = pd.DataFrame({
+            "sim_id": np.asarray(sim_ids, dtype=np.int32),
+            "team": pd.Categorical(team_col),
+            "group": pd.Categorical(group_col),
+            "group_rank": np.asarray(rank_col, dtype=np.int8),
+            "furthest_round": pd.Categorical(furthest_col, categories=FURTHEST_LABELS),
+        })
+        results_out.parent.mkdir(parents=True, exist_ok=True)
+        sim_df.to_parquet(results_out, index=False)
+
     rows = []
-    for team in all_teams:
+    for team in all_teams_flat:
         c = counters[team]
         rows.append({
             "team": team,

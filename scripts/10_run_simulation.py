@@ -2,13 +2,18 @@
 Run the 2026 World Cup Monte Carlo simulation.
 
   1. Loads the fitted Poisson model and team features.
-  2. Pre-computes score matrices for all 48*47/2 = 1,128 unique matchups.
-  3. Runs N tournament simulations.
-  4. Aggregates and outputs per-team tournament-progression probabilities.
+  2. Loads the recalibration temperature T (script 20) and applies it to the
+     pre-computed score matrices so simulated match outcomes match the
+     recalibrated, validated match model.
+  3. Pre-computes score matrices for all 48*47/2 = 1,128 unique matchups.
+  4. Runs N tournament simulations.
+  5. Aggregates per-team tournament-progression probabilities, and writes the
+     raw per-(sim, team) results for the contract fair-value module (script 21).
 
 Run from the project root:
     uv run python scripts/10_run_simulation.py
 """
+import json
 import pickle
 import time
 from pathlib import Path
@@ -26,6 +31,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 MODELS_DIR = PROCESSED_DIR / "models"
 STRUCTURE_PATH = PROJECT_ROOT / "data" / "external" / "wc2026_structure.yaml"
+CALIBRATION_PATH = PROCESSED_DIR / "calibration.json"
+SIM_RESULTS_PATH = PROCESSED_DIR / "simulation_results.parquet"
 
 N_SIMULATIONS = 50_000
 SEED = 42
@@ -39,6 +46,14 @@ def main() -> None:
     rho = bundle["dc_rho"]
     confederation_levels = bundle["confederation_levels"]
     print(f"  Model: {len(model.params)} parameters, Dixon-Coles rho = {rho:+.4f}")
+
+    # Recalibration temperature (script 20). Applied to every score matrix.
+    temperature = 1.0
+    if CALIBRATION_PATH.exists():
+        temperature = float(json.loads(CALIBRATION_PATH.read_text()).get("temperature", 1.0))
+        print(f"  Recalibration temperature T = {temperature} (applied to score matrices)")
+    else:
+        print("  No calibration.json found -> running uncalibrated (T = 1.0)")
 
     team_features = pd.read_parquet(PROCESSED_DIR / "team_features.parquet")
     groups = load_groups(STRUCTURE_PATH)
@@ -55,6 +70,7 @@ def main() -> None:
         confederation_levels=confederation_levels,
         groups=groups,
         max_goals=10,
+        temperature=temperature,
     )
     t_precompute = time.time() - t0
     print(f"  Pre-computed {len(score_matrices)} matrices in {t_precompute:.1f}s.")
@@ -66,14 +82,16 @@ def main() -> None:
         groups=groups,
         score_matrices=score_matrices,
         seed=SEED,
+        results_out=SIM_RESULTS_PATH,
     )
     t_simulate = time.time() - t0
     print(f"  Simulations complete in {t_simulate:.1f}s ({N_SIMULATIONS/t_simulate:.0f} sims/sec).")
 
-    # Save
+    # Save aggregated probabilities
     out_path = PROCESSED_DIR / "tournament_probs.parquet"
     probs.to_parquet(out_path, index=False)
     print(f"\nSaved tournament probabilities to {out_path}")
+    print(f"Saved raw per-sim results to {SIM_RESULTS_PATH} (input for script 21)")
 
     # Pretty-print the headline table
     print("\n" + "=" * 90)
@@ -108,7 +126,7 @@ def main() -> None:
     print(f"  Sum of P(reach_SF): {probs['p_reach_SF'].sum():.4f}  (should be 4.0)")
     print(f"  Sum of P(reach_QF): {probs['p_reach_QF'].sum():.4f}  (should be 8.0)")
     print(f"  Sum of P(reach_R16): {probs['p_reach_R16'].sum():.4f}  (should be 16.0)")
-    print(f"  Sum of P(reach_R32): {probs['p_reach_R16'].sum():.4f}")  # not 32 due to bye structure
+    print(f"  Sum of P(advance_from_group): {probs['p_advance_from_group'].sum():.4f}  (should be 32.0)")
     print(f"  Per group sum of P(win_group): should be 1.0 for each group")
     for g, group_teams in groups.items():
         s = probs[probs["team"].isin(group_teams)]["p_win_group"].sum()
