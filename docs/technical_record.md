@@ -292,6 +292,40 @@ from §5.5.
    vs a calibrated model; no intra-exchange arbitrage) (§7).
 8. Limitations & future work (§9).
 
+---
+
+## 12. Stage 3 — Live paper-trading experiment (in progress)
+
+A capital-free paper-trading experiment that operationalizes the Stage 1 model and
+the Stage 2 findings. **No real money.** With capital removed, the model-vs-market
+divergences (§7) stop being a go/no-go question and become a clean experiment: trade
+the model's signal on paper across the tournament and let real outcomes adjudicate
+whether the divergence is genuine edge or the model's mid-tier lean.
+
+**Self-contained** in `paper_trading/` (`README.md` methodology, `trade_log.md`
+running ledger, `scripts/`, `data/`); does not modify the model pipeline.
+
+**Venue priority.** Per-match markets are primary — the model's most-validated
+ground (OOS log loss 0.967; calibrated; champions rated top-3 in §5.5) and the
+fastest feedback (hours, not weeks). A diversified slice of reach-round value picks
+tests the headline divergence directly.
+
+**Portfolio rules.** $500 paper bankroll; quarter-Kelly sizing
+`size = 0.25 × ((p − a)/(1 − a)) × bankroll` (full Kelly over-bets because `p` is
+estimated); 10% per-position cap; skip stakes < $5; entry only where the model is in
+a reliable zone AND net edge ≥ 3¢/contract after Kalshi taker fees
+`ceil(0.07·C·P·(1−P))`.
+
+**Loop.** discover → price (model FV + reliability zone) → filter (net edge) →
+log → settle at real outcome → review and attribute P&L.
+
+**Expected outcome (hypothesis).** If match markets are as efficient as the
+outrights, paper P&L grinds to break-even-after-fees ("a calibrated model still
+can't beat an efficient market after costs"). If lower-attention group-stage match
+markets carry a soft pocket, the loop should surface it. Either is a documentable
+result; this section will be updated with the realized P&L and the verdict as the
+tournament progresses.
+
 ### Draft seed prompt (expand later)
 
 > "Using the attached technical record, write a rigorous, academic-style research
