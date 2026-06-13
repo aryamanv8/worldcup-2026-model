@@ -9,14 +9,14 @@
 
 | Metric | Value |
 |---|---|
-| As of | _not started_ |
+| As of | 2026-06-12 |
 | Starting bankroll | $500.00 |
-| Cash | $500.00 |
-| Open exposure (cost basis) | $0.00 |
+| Cash | $488.19 |
+| Open exposure (cost basis) | $11.81 |
 | Realized P&L | $0.00 |
 | Unrealized P&L | $0.00 |
 | **Total equity** | **$500.00** |
-| Open positions | 0 |
+| Open positions | 1 |
 | Settled trades | 0 |
 | Win rate (settled) | — |
 
@@ -26,7 +26,19 @@
 
 | # | Opened | Market | Ticker | Side | Entry ¢ | Qty | Stake $ | Fee $ | Cost $ | Model FV % | Net edge ¢ | Notes |
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
-| _none yet_ | | | | | | | | | | | | |
+
+| 1 | 2026-06-12 | Brazil vs Morocco | KXWCGAME-26JUN13BRAMAR-BRA | BUY NO | 42 | 27 | 11.34 | 0.47 | 11.81 | 47.4 | +3.7 | Brazil not to win in reg; Elo +78, reliable |
+
+### OPEN — 2026-06-12
+
+**Brazil vs Morocco** · Sat Jun 13, 2026 · group stage
+- Bet: **BUY NO @ Brazil** (Brazil does not win in regulation)
+- Market: KXWCGAME-26JUN13BRAMAR-BRA
+- Entry ask: 0.42 · Contracts: 27 · Stake: $11.34 + fee $0.47 = **cost $11.81**
+- Model fair value (NO): 0.474 · net edge +3.7¢/ct
+- Reliable zone: Elo gap +78 (50–150 bucket, |Δexp|=0.006)
+- Payoff if win: $27 → **P&L +$15.19**; if lose: **−$11.81**
+- Closing price: _(fill at kickoff)_ · Result: _(fill after match)_ · Status: **OPEN**
 
 ---
 
@@ -54,7 +66,7 @@
 - **Stake $** — `Qty × Entry` (in dollars).
 - **Fee $** — Kalshi taker fee, `ceil_cents(0.07 × Qty × P × (1−P))`.
 - **Cost $** — `Stake + Fee` (total cash out).
-- **Model FV %** — model's fair value for the YES outcome.
+- **Model FV %** — model's fair value for the **side bet** (for BUY NO, the complement: P(event does not happen)).
 - **Net edge ¢** — `(Model FV − Entry) × 100 − fee/contract`, the per-contract edge after fees.
 - **Payoff $** — `Qty × $1` if the position wins, else `$0`.
 - **Realized P&L $** — `Payoff − Cost` (single-leg; subtract exit fee if closed early).
