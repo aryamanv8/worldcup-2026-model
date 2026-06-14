@@ -71,6 +71,7 @@ NAME_MAP = {
     "Korea Republic": "South Korea", "South Korea": "South Korea",
     "Cote d'Ivoire": "Ivory Coast", "Côte d'Ivoire": "Ivory Coast",
     "IR Iran": "Iran",
+    "Congo DR": "DR Congo", "DR Congo": "DR Congo",
 }
 
 # Reliable-zone Elo-gap buckets (must match scripts/19_model_card.py)
@@ -304,6 +305,8 @@ def main():
     ap.add_argument("--zone-min-n", type=int, default=ZONE_MIN_N, help="min bucket sample size for reliable zone")
     ap.add_argument("--zone-max-exp-gap", type=float, default=ZONE_MAX_EXP_GAP,
                     help="max |exp_model-exp_real| in the Elo-gap bucket")
+    ap.add_argument("--max-deploy", type=float, default=0.30,
+                    help="cap total cost of the slate at this fraction of bankroll (correlated thesis guard)")
     args = ap.parse_args()
 
     ZONE_MIN_N, ZONE_MAX_EXP_GAP = args.zone_min_n, args.zone_max_exp_gap
@@ -378,9 +381,21 @@ def main():
                     "match_date": f0.get("match_date"),
                 })
 
+    chosen, deferred, n_legs, n_fix = select_trades(trades, args.bankroll, args.max_deploy)
     print_board(board, args.show_all)
-    print_slate(trades, args.bankroll)
-    write_slate(trades, args.bankroll)
+    if n_legs > n_fix:
+        print(f"\n[dedup] {n_legs} qualifying legs collapsed to {n_fix} one-per-match positions "
+              f"(NO-favorite + YES-underdog + YES-draw on one game are the SAME directional bet).")
+    print_slate(chosen, args.bankroll)
+    if deferred:
+        cap = args.max_deploy * args.bankroll
+        print(f"\n[deploy cap] {len(deferred)} position(s) deferred to keep total deployment "
+              f"<= {args.max_deploy*100:.0f}% (${cap:.0f}). These are all the same favorite-fade thesis; "
+              f"raise --max-deploy only if you want more on it.")
+        for t in deferred:
+            print(f"     deferred: {t['fixture']:<32} {t['bet']:<20} "
+                  f"net {t['net_edge_per_contract']*100:+.1f}c  ${t['total_cost']:.2f}")
+    write_slate(chosen, args.bankroll)
 
 
 def _pct(x):
@@ -449,6 +464,29 @@ def write_slate(trades, bankroll):
     path.write_text("\n".join(md) + "\n")
     print(f"\n[out] {path}\n[out] {OUT_DIR / f'trade_slate_{stamp}.json'}")
     print("      paste the table into paper_trading/trade_log.md once you've reviewed it.")
+
+
+def select_trades(trades, bankroll, max_deploy):
+    """Collapse to one position per fixture (highest net edge), then keep highest-edge
+    positions until total cost would exceed max_deploy*bankroll. Returns
+    (chosen, deferred, n_legs, n_fixtures). Multiple qualifying legs on one match are
+    the same directional view, so betting more than one over-concentrates a single bet."""
+    n_legs = len(trades)
+    best: dict[str, dict] = {}
+    for t in trades:
+        f = t["fixture"]
+        if f not in best or t["net_edge_per_contract"] > best[f]["net_edge_per_contract"]:
+            best[f] = t
+    ranked = sorted(best.values(), key=lambda t: t["net_edge_per_contract"], reverse=True)
+    cap = max_deploy * bankroll
+    chosen, deferred, spent = [], [], 0.0
+    for t in ranked:
+        if spent + t["total_cost"] <= cap:
+            chosen.append(t)
+            spent += t["total_cost"]
+        else:
+            deferred.append(t)
+    return chosen, deferred, n_legs, len(best)
 
 
 if __name__ == "__main__":
