@@ -9,14 +9,14 @@
 
 | Metric | Value |
 |---|---|
-| As of | 2026-06-12 |
+| As of | 2026-06-13 |
 | Starting bankroll | $500.00 |
-| Cash | $488.19 |
-| Open exposure (cost basis) | $11.81 |
+| Cash | $389.59 |
+| Open exposure (cost basis) | $110.41 |
 | Realized P&L | $0.00 |
 | Unrealized P&L | $0.00 |
 | **Total equity** | **$500.00** |
-| Open positions | 1 |
+| Open positions | 4 |
 | Settled trades | 0 |
 | Win rate (settled) | — |
 
@@ -26,8 +26,10 @@
 
 | # | Opened | Market | Ticker | Side | Entry ¢ | Qty | Stake $ | Fee $ | Cost $ | Model FV % | Net edge ¢ | Notes |
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
-
 | 1 | 2026-06-12 | Brazil vs Morocco | KXWCGAME-26JUN13BRAMAR-BRA | BUY NO | 42 | 27 | 11.34 | 0.47 | 11.81 | 47.4 | +3.7 | Brazil not to win in reg; Elo +78, reliable |
+| 2 | 2026-06-13 | Turkiye vs Paraguay | KXWCGAME-26JUN19TURPAR-PAR | BUY YES | 24 | 125 | 30.00 | 1.60 | 31.60 | 42.3 | +17.0 | Paraguay; Elo +48, reliable; favorite-fade |
+| 3 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
+| 4 | 2026-06-13 | Austria vs Jordan | KXWCGAME-26JUN17AUTJOR-AUT | BUY NO | 27 | 101 | 27.27 | 1.40 | 28.67 | 43.0 | +14.6 | Austria not to win in reg; Elo +110, reliable; favorite-fade |
 
 ### OPEN — 2026-06-12
 
