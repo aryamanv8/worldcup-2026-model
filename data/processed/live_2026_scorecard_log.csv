@@ -1,0 +1,2 @@
+run_date,n_scored,n_total,top_pick_acc,mean_logloss,mean_brier,flat_baseline_ll,baserate_baseline_ll
+2026-06-15,8,72,0.375,1.1043,0.6793,1.0986,0.9743
