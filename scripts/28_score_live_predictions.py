@@ -6,7 +6,19 @@ Purpose
 The re-runnable half of the live-tracking experiment. Reads the FROZEN
 predictions written by script 27, reads the CURRENT results.parquet, joins them,
 keeps only matches that have actually been played (non-null scores), and reports
-how well the frozen model predicted them.
+how well the frozen model predicted them — at two granularities:
+
+  1. 3-way "top pick" view: did the model's single most-likely outcome
+     (home/draw/away) match what happened? (top-pick accuracy, log loss, Brier)
+
+  2. Per-leg (binary) view: treat each match as THREE separate binary
+     propositions (home win? / draw? / away win?) — the same resolution as
+     individual Kalshi moneyline legs (e.g. "NO Brazil" = the home-win leg
+     resolving NO). A match's 3-way top pick can be "wrong" while the specific
+     leg that was actually traded resolves correctly (see Brazil/Morocco,
+     2026-06-13: top pick "Brazil wins" missed on the 1-1 draw, but the traded
+     leg NO-Brazil/"home win = NO" resolved correctly). This view gives 3x the
+     data points per match and matches how the model's edges are actually used.
 
 This is the script to re-run every few days. The loop is:
     uv run python scripts/01_fetch_results.py            # refresh results from upstream
@@ -14,23 +26,28 @@ This is the script to re-run every few days. The loop is:
 
 Outputs
 -------
-1. A per-match table (model probabilities vs actual outcome, hit/miss).
-2. Headline running scores: n matches, top-pick accuracy, mean log loss,
+1. A per-match table (3-way view): model probabilities vs actual outcome, hit/miss.
+2. Headline 3-way running scores: n matches, top-pick accuracy, mean log loss,
    mean Brier (multiclass), plus naive baselines for context.
-3. A dated snapshot row appended to live_2026_scorecard_log.csv so the evolution
-   of accuracy over time is preserved across re-runs.
+3. A per-leg table (binary view): one row per home/draw/away proposition, with
+   the model's probability, whether it realized, and the binary log loss.
+4. Pooled binary log loss / Brier across all legs.
+5. A dated snapshot row appended to live_2026_scorecard_log.csv covering both
+   views, so the evolution of accuracy over time is preserved across re-runs.
 
 Notes / caveats
 ---------------
-- Small-n warning: in the first days only a handful of matches are scored, so the
-  headline numbers are noisy and not yet meaningful. The log lets you watch them
-  stabilize as the group stage fills in.
+- Small-n warning: in the first days only a handful of matches are scored, so
+  ALL headline numbers (3-way and per-leg) are noisy. The log lets you watch
+  them stabilize as the group stage fills in.
+- The "base-rate baseline" (3-way view) is computed FROM the same played set,
+  so it is somewhat circular at small n — it knows the empirical H/D/A split of
+  exactly the matches being scored. Treat it as a loose sanity check, not a
+  fair external baseline, until n is large.
 - Group-stage matches can legitimately draw; full-time score = the outcome. (No
   regulation-vs-shootout subtlety until knockouts, which this tool doesn't cover
   yet.)
 - A match is "played" iff both score columns are non-null in results.parquet.
-- Baselines: log loss of (a) a flat 1/3-1/3-1/3 predictor and (b) the bookmaker-
-  free "home/draw/away base rate" predictor are printed for context only.
 
 Run from the project root:
     uv run python scripts/28_score_live_predictions.py
@@ -100,7 +117,7 @@ def main() -> None:
         print("Re-run scripts/01_fetch_results.py to refresh, then re-run this.")
         return
 
-    # Actual outcomes and per-match scoring
+    # --- 3-way ("top pick") view --------------------------------------------
     played["actual"] = [
         _actual_outcome(h, a)
         for h, a in zip(played["home_score"], played["away_score"])
@@ -111,7 +128,6 @@ def main() -> None:
     )
     played["p_assigned_to_actual"] = p_actual
     played["logloss"] = -np.log(np.clip(p_actual, EPS, 1.0))
-    # Multiclass Brier = sum over classes (p_k - y_k)^2
     onehot = np.vstack([
         (played["actual"] == "home").astype(float),
         (played["actual"] == "draw").astype(float),
@@ -121,9 +137,8 @@ def main() -> None:
     played["brier"] = ((P - onehot) ** 2).sum(axis=1)
     played["hit"] = (played["model_pick"] == played["actual"])
 
-    # --- Per-match table ----------------------------------------------------
     show = played.sort_values("date").copy()
-    print("\nPer-match (model probabilities vs actual):\n")
+    print("\n3-WAY VIEW — model's top pick vs actual outcome\n")
     header = (f"{'date':<11} {'home':<22} {'away':<22} "
               f"{'pH':>5} {'pD':>5} {'pA':>5} {'score':>7} {'act':>5} {'pick':>5} {'hit':>4}")
     print(header)
@@ -135,38 +150,66 @@ def main() -> None:
               f"{score:>7} {r['actual']:>5} {r['model_pick']:>5} "
               f"{'Y' if r['hit'] else '.':>4}")
 
-    # --- Headline running scores -------------------------------------------
     acc = float(played["hit"].mean())
     mean_ll = float(played["logloss"].mean())
     mean_brier = float(played["brier"].mean())
-
-    # Baselines for context (computed on the same played set)
-    flat_ll = float(-np.log(1.0 / 3.0))  # every match scored at 1/3
-    # Base-rate baseline: empirical H/D/A frequencies in the played set itself
-    base = onehot.mean(axis=0)  # [pH, pD, pA] base rates
+    flat_ll = float(-np.log(1.0 / 3.0))
+    base = onehot.mean(axis=0)
     base_ll = float(np.mean([
         -np.log(max(base[{"home": 0, "draw": 1, "away": 2}[o]], EPS))
         for o in played["actual"]
     ]))
 
     print("\n" + "=" * 78)
-    print("  RUNNING SCORES")
+    print("  3-WAY RUNNING SCORES")
     print("=" * 78)
     print(f"  matches scored        : {n_played}")
     print(f"  top-pick accuracy     : {acc*100:5.1f}%   "
           f"({int(played['hit'].sum())}/{n_played})")
     print(f"  mean log loss         : {mean_ll:.4f}")
     print(f"     vs flat 1/3 baseline : {flat_ll:.4f}")
-    print(f"     vs base-rate baseline: {base_ll:.4f}")
+    print(f"     vs base-rate baseline: {base_ll:.4f}  (circular at small n — loose sanity check only)")
     print(f"  mean Brier (multiclass): {mean_brier:.4f}")
     if n_played < 10:
         print("\n  [!] n < 10 — these numbers are noisy; treat as provisional.")
-
-    # Reference points from the project's historical backtest (for orientation)
     print("\n  Reference (historical OOS, script 06/20): pooled WC log loss ~0.967.")
-    print("  Live numbers should be read against that once n is large enough.")
 
-    # --- Append dated snapshot to the log ----------------------------------
+    # --- Per-leg (binary) view -----------------------------------------------
+    leg_rows = []
+    for _, r in played.iterrows():
+        for leg, p in (("home", r["p_home"]), ("draw", r["p_draw"]), ("away", r["p_away"])):
+            realized = 1 if r["actual"] == leg else 0
+            pc = float(np.clip(p, EPS, 1 - EPS))
+            ll = -np.log(pc) if realized else -np.log(1 - pc)
+            leg_rows.append({
+                "date": r["date"], "home_team": r["home_team"], "away_team": r["away_team"],
+                "leg": leg, "model_p": p, "realized": realized, "logloss": ll,
+                "brier": (p - realized) ** 2,
+            })
+    legs = pd.DataFrame(leg_rows)
+
+    print("\n" + "=" * 78)
+    print("  PER-LEG (BINARY) VIEW  —  one row per home/draw/away proposition")
+    print("=" * 78)
+    print("  Same resolution as individual Kalshi moneyline legs (e.g. 'NO Brazil'")
+    print("  = the 'home' leg resolving NO). A match's 3-way top pick can be wrong")
+    print("  while the specific traded leg is still right — see Brazil/Morocco below.\n")
+    lheader = (f"{'date':<11} {'home':<14} {'away':<14} {'leg':<5} "
+               f"{'model p':>8} {'realized':>9} {'logloss':>8}")
+    print(lheader)
+    print("-" * len(lheader))
+    for _, r in legs.sort_values(["date", "leg"]).iterrows():
+        print(f"{r['date'].date()!s:<11} {r['home_team']:<14} {r['away_team']:<14} "
+              f"{r['leg']:<5} {r['model_p']*100:>7.1f}% {r['realized']:>9} {r['logloss']:>8.3f}")
+
+    leg_ll = float(legs["logloss"].mean())
+    leg_brier = float(legs["brier"].mean())
+    print(f"\n  pooled binary log loss : {leg_ll:.4f}  (n_legs={len(legs)})")
+    print(f"  pooled binary Brier    : {leg_brier:.4f}")
+    if len(legs) < 30:
+        print("\n  [!] n_legs < 30 — still noisy, but converges faster than the 3-way view.")
+
+    # --- Append dated snapshot to the log ------------------------------------
     if not args.no_log:
         snap = pd.DataFrame([{
             "run_date": pd.Timestamp.now().normalize().date(),
@@ -177,10 +220,12 @@ def main() -> None:
             "mean_brier": round(mean_brier, 4),
             "flat_baseline_ll": round(flat_ll, 4),
             "baserate_baseline_ll": round(base_ll, 4),
+            "n_legs": len(legs),
+            "binary_logloss": round(leg_ll, 4),
+            "binary_brier": round(leg_brier, 4),
         }])
         if LOG_PATH.exists():
             prior = pd.read_csv(LOG_PATH)
-            # If a row already exists for today, replace it (idempotent re-runs).
             prior = prior[prior["run_date"] != str(snap["run_date"].iloc[0])]
             snap = pd.concat([prior, snap], ignore_index=True)
         snap.to_csv(LOG_PATH, index=False)
