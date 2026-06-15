@@ -81,7 +81,7 @@ This project uses [uv](https://docs.astral.sh/uv/) for Python dependency managem
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone and install dependencies
-git clone https://github.com/aryamanv8/worldcup-2026-model.git
+git clone https://github.com/aryamanverma/worldcup-2026-model.git
 cd worldcup-2026-model
 uv sync
 
