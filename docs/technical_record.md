@@ -6,10 +6,14 @@
 > instruction to a model and the skeleton and all load-bearing facts are present.
 >
 > **Author:** Aryaman Verma (CMU; applied math + computational finance).
-> **Last updated:** 2026-06-11.
-> **Status:** **Stage 1 COMPLETE and validated at tournament level.** Stage 2
-> (market-side) in progress: Kalshi data feed, model-vs-market mapping, and
-> model-free arbitrage scanners built; no tradeable edge found within Kalshi so far.
+> **Last updated:** 2026-06-15.
+> **Status:** **Stage 1 COMPLETE and validated at tournament level. Stage 2
+> (market-side) COMPLETE** — Kalshi data feed, model-vs-market mapping, fee model,
+> model-free arbitrage scanners, and dashboard built; no tradeable edge found on
+> liquid Kalshi outrights/round markets. **Stage 3 (live $500 paper-trading
+> experiment on per-match markets) IN PROGRESS**, started 2026-06-12 — see §12.
+> **Live model validation (§13) IN PROGRESS** — frozen model predictions scored
+> against real 2026 results as the tournament unfolds.
 
 ---
 
@@ -174,7 +178,7 @@ in 4/4 WCs — model validated at tournament level.
 
 ---
 
-## 7. Stage 2 — market-side (in progress)
+## 7. Stage 2 — market-side (COMPLETE)
 
 **Strategic frame.** Edge does not come from out-forecasting sharp markets. The
 model is a calibrated fair-value reference; edge (if any) comes from (1) monotonicity
@@ -211,12 +215,18 @@ negative once real NO-asks and 48-leg fees are applied. **Conclusion: no model-f
 edge within Kalshi.** Cross-platform (Kalshi vs Polymarket) is the only remaining
 model-free avenue and is currently deferred/unlikely to be pursued.
 
-**Stage-2 status & remaining:** data feed + mapping + scanners done. No tradeable
-edge found within Kalshi. Remaining build: (a) fee model — scoped to close the
-dutch-book flags rigorously and to produce per-contract net-EV for display, not as a
-strategy filter; (b) dashboard — model and market shown as two distinct, legitimate
-series (the model's calibration is a feature); (c) commit + record update; then
-strategy study (niche markets, alt data) parked for later.
+**Stage-2 status & remaining (CLOSED OUT).** Data feed + mapping + scanners + fee
+model + dashboard all built and committed:
+- **Fee model** — implemented in `paper_trading/scripts/02_price_match_markets.py`
+  (`ceil(0.07·C·P·(1−P))`), used both to close out the dutch-book flags (negative
+  after real fees) and as the Stage-3 entry gate's net-EV filter.
+- **Dashboard** — `dashboard/dashboard.html`, showing model and market as two
+  distinct, legitimate series (the model's calibration is a feature, not a flaw).
+- No tradeable edge found within Kalshi outrights/round markets.
+
+Remaining: cross-platform arbitrage and niche-market/alt-data strategy study remain
+parked for a later phase (not on the critical path; Stage 3 below is now the active
+work).
 
 ---
 
@@ -290,7 +300,11 @@ from §5.5.
 7. Application: prediction-market analysis — and the honest negative result that no
    tradeable edge exists on liquid Kalshi outrights (market favorite-longshot bias
    vs a calibrated model; no intra-exchange arbitrage) (§7).
-8. Limitations & future work (§9).
+8. Live paper-trading experiment — brief overview only (§12.3 summary table); not
+   the focus of the paper. State hypothesis, rules, final P&L, and verdict in ~0.5
+   pages. Detailed trade log lives in `trade_log.md`.
+9. Live model validation: final log loss vs baselines (§13.2).
+10. Limitations & future work (§9).
 
 ---
 
@@ -326,15 +340,258 @@ markets carry a soft pocket, the loop should surface it. Either is a documentabl
 result; this section will be updated with the realized P&L and the verdict as the
 tournament progresses.
 
-### Draft seed prompt (expand later)
+### 12.1 Execution tooling & Day-1 book (2026-06-13)
 
-> "Using the attached technical record, write a rigorous, academic-style research
-> paper on a public-data probabilistic forecasting system for the 2026 FIFA World
-> Cup. Center the contribution on the calibration methodology — the Elo-yardstick
-> misdiagnosis, stratified reliability, temperature recalibration, and the
-> tournament-level backtest that validated the model and vetoed a market-matching
-> edit. Cover the prediction-market application and the honest finding that no
-> tradeable edge exists on liquid markets. Use the results tables verbatim. Keep the
-> honest caveats (regression dilution, un-propagated strength uncertainty,
-> favorite-longshot interpretation, retail-trading viability). Target
-> [venue/length]. Include [methods detail level]."
+**Tooling.** `paper_trading/scripts/`: `01_discover_match_markets.py` (open KXWC*
+markets → fixtures, date-windowed), `02_price_match_markets.py` (frozen T=0.77 model
+→ per-fixture moneyline fair value via `recalibrate_score_matrix`; reliable-zone gate
++ fee model + quarter-Kelly; one position per match; total-deployment cap), and
+`03_settle.py` (books regulation results into `portfolio.json`, rolls bankroll,
+appends `calibration_log.csv`). Model frozen for the tournament — all trades
+attributable to one model.
+
+**Reliable-zone operationalization (load-bearing).** The committed `model_card.json`
+flags *every* stratum `reliable=false`: its rule (max-per-class ECE ≤ 0.05) is
+unreachable at n ≤ 70 (binned ECE is upward-biased at small n), and it is the
+pre-temperature card. The entry gate was therefore redefined onto the robust signal
+of §5.2/§5.3: in-zone iff the Elo-gap bucket has n ≥ 30 and |E_model − E_real| ≤ 0.05.
+In-zone buckets: −50..50 (|Δ|=0.041), 50..150 (|Δ|=0.006); wider-gap buckets out.
+Pending refinement: regenerate the card on `backtest_predictions_recalibrated.parquet`.
+
+**Entry rule.** Reliable zone AND net edge ≥ 3¢/contract after taker fee
+`ceil(0.07·C·P·(1−P))` AND stake ≥ $5; quarter-Kelly; 10% per-position cap; one
+position per match (NO-favorite + YES-underdog + YES-draw are the same directional
+bet); total-deployment guard. `model_fv` recorded for the side actually bet
+(NO = complement) for calibration-log coherence.
+
+**Day-1 observation (sharpens §7).** Within the reliable zone the qualifying trades
+are dominated by the same favorite-underconfidence found on the outrights — the model
+rates the market favorite lower than the market. Bucket-average calibration cannot
+separate genuine edge from this mid-tier lean *within* a calibrated bucket, so the
+staked basket is effectively one correlated thesis (favorite-fade), deliberately
+sized small and tagged for attribution. The zone still does necessary work: it
+excludes extreme-gap games where the model is plainly wrong (e.g. Spain 63% vs
+market 91%).
+
+**Opening book (4 positions entered 2026-06-12/13, $110.41 = 22% of $500).**
+
+| # | Match | Bet | Entry ¢ | Qty | Cost $ | Model FV % | Net edge ¢ | Tag | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Brazil vs Morocco | NO Brazil | 42 | 27 | 11.81 | 47.4 | +3.7 | reliable | **WIN** (1-1 draw, 2026-06-13), +$15.19 |
+| 2 | Austria vs Jordan | NO Austria | 27 | 101 | 28.67 | 43.0 | +14.6 | favorite-fade | OPEN, settles 2026-06-17 |
+| 3 | Turkiye vs Paraguay | YES Paraguay | 24 | 125 | 31.60 | 42.3 | +17.0 | favorite-fade | OPEN, settles 2026-06-19 |
+| 4 | Ecuador vs Germany | NO Germany | 45 | 82 | 38.33 | 61.4 | +14.7 | favorite-fade | OPEN, settles 2026-06-25 |
+
+Settlement is regulation time (matches Kalshi KXWCGAME). Full ledger: `paper_trading/trade_log.md`.
+
+### 12.2 Settlement entries (running)
+
+**#1 — Brazil vs Morocco (settled 2026-06-14).** Result: 1-1 draw (Saibari 21',
+Vinicius Jr 32'; MetLife Stadium). NO @ Brazil → **WIN**. Payoff $27.00 on $11.81
+cost. Realized P&L: **+$15.19**. Bankroll: $500.00 → $515.19.
+
+*Interpretation caveat:* tagged `reliable`, Elo +78 near-even matchup — not part of
+the `favorite-fade` basket. A single win on a coin-flip market is uninformative about
+the thesis; the three open `favorite-fade` positions are what bear on the experiment.
+
+**#2 — Austria vs Jordan (settles 2026-06-17).** [To be filled.]
+
+**#3 — Turkiye vs Paraguay (settles 2026-06-19).** [To be filled.]
+
+**#4 — Ecuador vs Germany (settles 2026-06-25).** [To be filled.]
+
+### 12.3 Final book summary [fill at tournament end — paper pulls from here]
+
+| Metric | Value |
+|---|---|
+| Total positions | [TBD] |
+| Settled | [TBD] |
+| Won / Lost | [TBD] |
+| Win rate | [TBD] |
+| Total cost (all positions) | [TBD] |
+| Total payoff | [TBD] |
+| Realized P&L | [TBD] |
+| Final equity | [TBD] |
+| Favorite-fade win rate | [TBD] / [TBD] |
+| Verdict | [TBD: edge confirmed / noise / thesis rejected] |
+
+**Narrative verdict [fill at end]:** [Did the favorite-fade basket outperform,
+underperform, or land near zero after fees? One paragraph for the paper.]
+
+## 13. Live 2026 tracking (in progress)
+
+A parallel, capital-free validation track, independent of the paper-trading
+experiment: as the actual 2026 tournament unfolds, the frozen model's
+pre-match predictions are scored against real results — the first genuinely
+live (never-seen) test of this model.
+
+**Methodology.** `scripts/27_export_live_predictions.py` (run once,
+write-protected) runs the frozen model (T=0.77, rho=-0.0246) through the same
+`predict_match_dc` -> `recalibrate_score_matrix` -> W/D/L path used everywhere
+else, for all 72 group-stage fixtures sourced directly from `results.parquet`
+(exact dates/matchups). Home advantage replicates the simulator's rule exactly
+(only Mexico/Canada/USA, only in their own group matches). Output:
+`live_2026_predictions.parquet`, a fixed yardstick frozen alongside the model.
+
+`scripts/28_score_live_predictions.py` (re-run every few days, after
+`01_fetch_results.py`) joins these frozen predictions against current results,
+scores played matches (top-pick accuracy, log loss, Brier vs flat/base-rate
+baselines), and appends a dated snapshot to `live_2026_scorecard_log.csv`.
+
+**Day-1 status (2026-06-15, n=8).** Top-pick accuracy 3/8 (37.5%); mean log
+loss 1.104 vs historical OOS 0.967. At n=8 this is noise, not a finding —
+flagged explicitly by the script. One structural note: 3 of the 5 misses were
+draws, and the model never assigns "draw" the highest W/D/L probability across
+these 8 matches — a known property of argmax scoring on W/D/L outputs, not a
+defect (e.g. Brazil/Morocco's 25.9% draw probability was real and substantial,
+just not the largest of the three).
+
+### 13.1 Scorecard log (running)
+
+Re-run `01_fetch_results.py` then `28_score_live_predictions.py` every few days.
+Log appends to `data/processed/live_2026_scorecard_log.csv`.
+
+| Run date | n scored | Top-pick acc | Mean log loss | Binary log loss | Note |
+|---|---|---|---|---|---|
+| 2026-06-15 | 8 / 72 | 37.5% | 1.104 | 0.642 | Day 1; n too small for inference |
+| [next run] | | | | | |
+
+### 13.2 Final validation results [fill at end — paper pulls from here]
+
+| Metric | Value | Baseline |
+|---|---|---|
+| n matches scored | [TBD] / 72 | — |
+| Top-pick accuracy | [TBD]% | 33.3% (uniform) |
+| Mean log loss (3-way) | [TBD] | 1.099 (uniform) / 0.974 (base rate) |
+| Binary log loss (per-leg) | [TBD] | 0.693 (coin flip) |
+| Brier score | [TBD] | — |
+
+**Narrative [fill at end]:** [One paragraph: did the frozen model beat baselines
+at n=72? Draw under-rating confirmed or noise? Any systematic failure modes?]
+
+---
+
+## 14. Paper-generation prompt
+
+> **How to use.** Once the tournament is over and §12.3 and §13.2 are filled in,
+> paste this entire technical record into a new Claude conversation, followed by
+> the prompt below. Also attach `paper_trading/trade_log.md` for the final P&L
+> numbers and `data/processed/live_2026_scorecard_log.csv` for the final
+> validation row.
+
+---
+
+```
+I'm going to give you a technical record documenting a complete data science
+project — a probabilistic forecasting system for the 2026 FIFA World Cup and
+its application to prediction-market analysis. Please write the paper described
+below from that record.
+
+**Output format.** A single LaTeX file, article class, 11pt, a4paper margins,
+no journal-submission formatting (no abstract keywords, no author affiliations
+beyond "Aryaman Verma, Carnegie Mellon University"). Use the following packages:
+amsmath, booktabs, graphicx, hyperref, microtype, geometry (2.5cm margins),
+parskip. Tables: booktabs style (\toprule / \midrule / \bottomrule). Internal
+cross-references via \label{} and \ref{}. No custom theorem environments or
+colored boxes.
+
+**Tone and audience.** Academically honest, first-person, concise. No filler
+phrases ("it is worth noting that", "as we can see"). Caveats are not
+disclaimers to bury — they are substantive methodological points; present them
+in-line. Audience: technically literate reader (ML/stats/quant finance
+background). No tutorial-level probability or statistics.
+
+**Length.** 8–12 pages, not counting any appendix.
+
+**Paper structure and section weights:**
+
+1. Abstract (~150 words). Summarize the model, the central calibration
+   finding (Elo-yardstick misdiagnosis), the market-analysis result (no
+   tradeable edge on liquid outrights), and the live paper-trading verdict.
+
+2. Introduction (~0.5 page). Motivation: why calibration is the right
+   objective for a market-reference model, not raw log loss. Briefly frame
+   the three stages. Cite Dixon & Coles (1997) and the World Football Elo
+   rating system.
+
+3. Data and Features (~0.5 page). Source the details from §3 of the record.
+   Present the squad-value design decisions (mean vs sum, fallback logic)
+   concisely; these are load-bearing and worth one sentence each. The feature
+   table from §3 can be reproduced verbatim.
+
+4. Model (~0.5 page). Source from §4. Cover the Poisson GLM + Dixon-Coles
+   architecture, the ρ estimate, and the architectural-ceiling negative result
+   (the elo_implied_score feature). Do not over-expand this section — the
+   model is standard; the calibration work is the contribution.
+
+5. Calibration methodology (~2 pages). This is the core of the paper.
+   Structure it as a single narrative arc with four beats:
+   a. The apparent failure: model under-rates favorites vs Elo (§5.1).
+   b. The diagnostic correction: Elo is the overconfident party (§5.2) —
+      include the empirical saturation numbers and the regression-dilution
+      caveat.
+   c. Stratified reliability and mild residual underconfidence (§5.3) —
+      include the ECE numbers and the important note that binned ECE is
+      upward-biased at small n.
+   d. Temperature recalibration (§5.4) — T=0.77, the log loss improvement,
+      and the fold-stability check. Then the tournament-level backtest (§5.5)
+      as the capstone: reproduce the 4-WC results table verbatim, state the
+      10.8% mean champion probability finding, and explain why this vetoed
+      the market-matching edit. This is the strongest result in the paper.
+
+6. Simulation and contract pricing (~0.5 page). Source from §8. Cover T
+   propagation into the simulator and the structural validation (slot-sum +
+   monotonicity checks). Present the 2026 fair-value top-5 from §6.
+
+7. Prediction-market analysis (~1 page). Source from §7. Cover the Kalshi
+   data feed, the de-vig methodology, the systematic model-vs-market
+   divergence pattern (elite team underpricing), and the honest conclusion:
+   this is market favorite-longshot bias against a calibrated model, not
+   model error, and it is not tradeable on liquid outrights. Cover the
+   arbitrage scanner result (no executable locks). Be direct about the
+   negative finding — it is a real result, not a failure.
+
+8. Live paper-trading experiment (~0.5 page). Source from §12.3 and
+   trade_log.md for the final numbers. State the hypothesis and rules
+   briefly, then present the final summary table (§12.3) and the verdict.
+   Do NOT describe individual trades. Frame honestly: a $500 paper experiment
+   over one tournament is not sufficient to confirm or reject the
+   favorite-fade thesis statistically; state what it does and does not
+   establish.
+
+9. Live model validation (~0.5 page). Source from §13.2 and the final
+   scorecard log. State the log loss and Brier vs baselines at n=72 and
+   interpret. Include the draw under-rating structural note from §13.
+
+10. Limitations and future work (~0.5 page). Source from §9. Include
+    regression-dilution correction, un-propagated strength uncertainty,
+    knockout-vs-group calibration, and the injury-overlay point. Be honest
+    that the hierarchical rebuild was parked because §5.5 showed it wasn't
+    needed for calibration, not because it wouldn't improve things.
+
+11. Conclusion (~0.3 page). Restate the three findings: model is well-
+    calibrated at match and tournament level; no tradeable edge on liquid
+    prediction markets; live experiment result. One sentence on what the
+    project demonstrates about the quant loop (measure on resolved data,
+    let it veto tempting edits).
+
+**Tables.** Reproduce verbatim from the record: the headline match-model
+results table (§6), the 4-WC tournament backtest table (§5.5), and the
+§12.3 final trade summary table. Use booktabs formatting.
+
+**What NOT to include.**
+- Individual trade settlement descriptions (12.2 entries). The paper gets
+  the summary table only.
+- Step-by-step script descriptions. Reference script numbers once where
+  relevant, then move on.
+- The "open questions" list as a list — fold relevant items into §10
+  (limitations) as prose.
+- This prompt section (§14) of the technical record.
+
+**Citations.** Only cite papers explicitly named in the record: Dixon & Coles
+(1997) "Modelling Association Football Scores and Inefficiencies in the
+Football Betting Market", and the World Football Elo rating system. Use
+\bibitem in a plain thebibliography environment — no BibTeX file needed.
+
+Please output the complete LaTeX source, compilable with pdflatex.
+```

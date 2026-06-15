@@ -8,3 +8,26 @@ wheels/
 
 # Virtual environments
 .venv
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Environment files
+.env
+.env.*
+
+# Scaffolding leftovers (removed from tracking)
+main.py
+questions.md
