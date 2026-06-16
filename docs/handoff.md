@@ -92,23 +92,40 @@ Full detail, tables, and caveats: `technical_record.md` §12.4.
 
 ---
 
-## 5. Automated maintenance — already running
+## 5. Automation architecture (TWO machines — this is the key design fact)
 
-A scheduled task ("wc-paper-trading-settlement-loop", daily ~9am) runs the
-settlement loop automatically: fetch results → settle any due position →
-sync `trade_log.md` → update the live scorecard → report. It covers Austria
-(6/17), Turkiye/Paraguay (6/19), Germany/Ecuador (6/25). It only runs while the
-Claude app is open (catches up on next launch). Manage/disable it in the Scheduled
-sidebar.
+**Claude's scheduled tasks run in an isolated sandbox that CANNOT run `uv` and
+CANNOT reach the internet.** Verified 2026-06-16: `raw.githubusercontent.com`
+(match results) and both Kalshi API hosts (`api.kalshi.com`,
+`api.elections.kalshi.com`) are proxy-blocked, and `uv` can't download Python.
+So **the model + all data fetching MUST run on the Mac**, and the Claude tasks do
+**read-and-reason only** over the files the Mac writes. Split:
 
-Manual equivalent (run on the Mac, where `uv` + network work):
+- **Mac side — `scripts/morning.sh`** (run manually, or via launchd; see below).
+  Does the heavy lifting that needs uv + internet: fetch results → settle due
+  positions → score model → discover/refresh Kalshi markets → price markets
+  (`--show-all`, candidates incl. capped/deferred). Writes everything to
+  `reports/daily/<date>/` (portfolio snapshot, `trade_slate.{md,json}`,
+  `STATUS.json` marker, `run.log`). Never fails hard.
+- **Claude side — two scheduled tasks** (both read-only; both check today's
+  `STATUS.json` and tell you to run `morning.sh` if it's missing):
+  1. `wc-paper-trading-settlement-loop` (09:09) — reads the settled
+     `portfolio.json`, syncs `trade_log.md`, reports settlements.
+  2. `wc-trade-ideas-digest` (09:34) — reads the Mac slate + open book, adds the
+     reasoning/position-context/lineup layer, writes `reports/trade_ideas_<date>.md`
+     and a chat summary (see §11). Surfaces options even when the book is full.
+
+**Hands-free Mac run (recommended):** install the launchd job so `morning.sh`
+runs at 07:30 daily, before the Claude tasks read at 09:xx:
 ```bash
-cd ~/Projects/worldcup-2026-model
-uv run python scripts/01_fetch_results.py
-uv run python paper_trading/scripts/03_settle.py
-uv run python scripts/28_score_live_predictions.py
-# then manually sync paper_trading/trade_log.md to portfolio.json
+cp scripts/launchd/com.aryamanverma.wc-morning.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.aryamanverma.wc-morning.plist
 ```
+Without launchd, just run `./scripts/morning.sh` yourself each morning before
+opening Claude. Both Claude tasks only run while the Claude app is open (they catch
+up on next launch). **Status: morning.sh + both Claude tasks are wired up but have
+NOT yet been run end-to-end on the Mac — first run needs verification (does
+`02_price_match_markets.py` produce a slate cleanly? does launchd fire?).**
 
 ---
 
@@ -217,26 +234,18 @@ and learn. This is an analysis/ideation tool, not an auto-trader.
      favorite-fade, out-of-zone, or sub-threshold) — shown *with the reason* it's
      parked. This is the "let me see options anyway" bucket Aryaman asked for.
 
-### Open design decisions for the next session to resolve FIRST
-- **Execution environment (the blocker to settle).** These scripts need
-  `uv run python` with the project venv + the `wc2026` package + the model pickle.
-  In the Cowork sandbox, `uv` cannot run (network-blocked Python download), and
-  bash runs in the Linux sandbox, not on the Mac — so a scheduled task likely
-  **cannot run the model itself**. Realistic options to choose between:
-  (a) **Hybrid** — Aryaman runs the scripts on the Mac (or a tiny `make morning`
-      wrapper), pastes/loads the slate, and Claude does the reasoning + digest;
-  (b) **Sandbox-native** — get the scripts running under system Python in the
-      sandbox (`pip install --break-system-packages` the deps, `PYTHONPATH=src`,
-      no uv) so a scheduled task can run end-to-end — feasible but needs a port
-      of the run path and dependency list, and must read the mounted Mac repo;
-  (c) **Mac-side automation** — a cron/launchd job on the Mac writes the daily
-      slate to `reports/`, and the morning Claude session reads + reasons over it.
-  Note the existing settlement scheduled task has the SAME constraint — verify it
-  can actually execute `uv run` in the scheduled environment; if not, it needs the
-  same hybrid treatment. **Resolve this before building.**
-- **Merge or separate?** This likely combines with the existing
-  "wc-paper-trading-settlement-loop" task into one morning routine
-  (settle → refresh markets → trade ideas → digest), rather than two tasks.
+### Execution environment — RESOLVED 2026-06-16
+The sandbox cannot run uv or reach results/Kalshi (verified — see §5). So we use
+the **Mac-side `scripts/morning.sh` writes outputs → Claude tasks read + reason**
+architecture (option (c)+ hybrid). `morning.sh`, the launchd plist, and both
+read-only Claude tasks are built. What's LEFT: a first end-to-end Mac run to
+confirm `02_price_match_markets.py` emits a clean slate and launchd fires; then the
+digest task's reasoning layer can be refined against a real slate's shape.
+
+### Other open design decisions
+- **Merge or separate?** Currently kept as two read-only Claude tasks (settlement
+  09:09 + digest 09:34). Could later merge into one morning routine if two firings
+  feels redundant — both just read the same `morning.sh` output.
 - **Trigger:** daily ~8–9am while the app is open (matches the settlement task), or
   ad-hoc "run now" each morning.
 - **Market-movement threshold:** define what counts as "odds updated" worth

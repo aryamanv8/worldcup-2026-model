@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hands-free daily run of scripts/morning.sh on the Mac at 07:30 local time.
+  This is what makes the data fresh BEFORE the Claude scheduled tasks read it
+  (settlement 09:09, trade-ideas digest 09:34).
+
+  INSTALL (one time, in Terminal):
+    cp scripts/launchd/com.aryamanverma.wc-morning.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.aryamanverma.wc-morning.plist
+  CHECK:    launchctl list | grep wc-morning
+  LOGS:     reports/daily/<date>/run.log   (and /tmp/wc-morning.{out,err})
+  UNINSTALL:
+    launchctl unload ~/Library/LaunchAgents/com.aryamanverma.wc-morning.plist
+    rm ~/Library/LaunchAgents/com.aryamanverma.wc-morning.plist
+
+  NOTE: uses a login shell (bash -lc) so `uv` is on PATH. If your repo path or
+  username differs, edit the cd path below.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.aryamanverma.wc-morning</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd "$HOME/Projects/worldcup-2026-model" &amp;&amp; ./scripts/morning.sh</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>7</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/wc-morning.out</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/wc-morning.err</string>
+</dict>
+</plist>
