@@ -31,3 +31,7 @@ wheels/
 # Scaffolding leftovers (removed from tracking)
 main.py
 questions.md
+
+# Daily auto-generated pipeline outputs (regenerated each morning by scripts/morning.sh)
+reports/daily/
+reports/trade_ideas_*.md

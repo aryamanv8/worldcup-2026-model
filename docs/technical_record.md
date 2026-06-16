@@ -504,6 +504,34 @@ conclusions; sizing is summed across overlapping matches, so "ROI on staked" (no
 absolute $) is the honest comparison. Re-run: `uv run python
 scripts/29_backtest_trading_strategy.py --odds data/raw/wc_closing_odds.csv`.
 
+### 12.5 Daily automation pipeline (operational 2026-06-16)
+
+Stage-3 operations are automated via a **two-machine** design, forced by the fact
+that Claude's scheduled-task sandbox cannot run `uv` and cannot reach the internet
+(`raw.githubusercontent.com` results feed and both Kalshi API hosts are
+proxy-blocked — verified). The model + all fetching run on the Mac; Claude does
+read-and-reason only.
+
+- **Mac — `scripts/morning.sh`** (run by launchd `com.aryamanverma.wc-morning` at
+  07:30 local, or manually). Runs fetch results → settle → score → discover Kalshi
+  markets → price (`--show-all --max-deploy 0.20`), then writes `reports/daily/
+  <date>/`: `portfolio.json` snapshot, `trade_slate.{md,json}`, `STATUS.json`
+  marker, `run.log`. Continue-on-error (no hard fail). Verified end-to-end
+  2026-06-16 (5/5 steps ok).
+- **Claude — two read-only scheduled tasks.** `wc-paper-trading-settlement-loop`
+  (09:09) syncs `trade_log.md` from the settled `portfolio.json` and reports.
+  `wc-trade-ideas-digest` (09:34) reads the slate + open book and writes
+  `reports/trade_ideas_<date>.md`, splitting candidates into **actionable-now** vs
+  **informational-only**, and applying the §12.4 backtest verdict (discount the
+  model's over-claimed edges, flag favorite-fade, never recommend scaling or new
+  fades). Both check `STATUS.json` and no-op (with a "run morning.sh" message) if
+  the Mac pipeline hasn't run that day.
+
+Daily outputs (`reports/daily/`, `reports/trade_ideas_*.md`) are git-ignored
+(regenerated each morning). First digest (2026-06-16) surfaced 3 candidates, 0
+actionable — at the deployment cap, 2 of 3 favorite-fade, 1 favorite-boost at a
+3.5¢ noise-level edge — consistent with the §12.4 verdict.
+
 ## 13. Live 2026 tracking (in progress)
 
 A parallel, capital-free validation track, independent of the paper-trading

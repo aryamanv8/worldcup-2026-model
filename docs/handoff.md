@@ -123,9 +123,13 @@ launchctl load ~/Library/LaunchAgents/com.aryamanverma.wc-morning.plist
 ```
 Without launchd, just run `./scripts/morning.sh` yourself each morning before
 opening Claude. Both Claude tasks only run while the Claude app is open (they catch
-up on next launch). **Status: morning.sh + both Claude tasks are wired up but have
-NOT yet been run end-to-end on the Mac — first run needs verification (does
-`02_price_match_markets.py` produce a slate cleanly? does launchd fire?).**
+up on next launch). **Status (2026-06-16): VERIFIED end-to-end.** `morning.sh` ran
+clean on the Mac (5/5 steps ok, no FAILs); both Claude tasks tested via "Run now"
+and read the output correctly (today's digest = `reports/trade_ideas_2026-06-16.md`);
+launchd job `com.aryamanverma.wc-morning` is installed and queued (exit 0). First
+LIVE settlement test is Austria on 2026-06-17 — watch that the settlement task
+reports the result and syncs `trade_log.md`. The whole system runs only when the
+Mac is awake AND the Claude app is open.
 
 ---
 
@@ -234,13 +238,13 @@ and learn. This is an analysis/ideation tool, not an auto-trader.
      favorite-fade, out-of-zone, or sub-threshold) — shown *with the reason* it's
      parked. This is the "let me see options anyway" bucket Aryaman asked for.
 
-### Execution environment — RESOLVED 2026-06-16
+### Execution environment — RESOLVED + VERIFIED 2026-06-16
 The sandbox cannot run uv or reach results/Kalshi (verified — see §5). So we use
 the **Mac-side `scripts/morning.sh` writes outputs → Claude tasks read + reason**
 architecture (option (c)+ hybrid). `morning.sh`, the launchd plist, and both
-read-only Claude tasks are built. What's LEFT: a first end-to-end Mac run to
-confirm `02_price_match_markets.py` emits a clean slate and launchd fires; then the
-digest task's reasoning layer can be refined against a real slate's shape.
+read-only Claude tasks are built, run end-to-end clean, and launchd is installed.
+The pipeline is live. Remaining refinement (optional, not blocking): tune the
+digest's reasoning/formatting against more real slates as the tournament runs.
 
 ### Other open design decisions
 - **Merge or separate?** Currently kept as two read-only Claude tasks (settlement
