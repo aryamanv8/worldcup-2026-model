@@ -418,6 +418,92 @@ the thesis; the three open `favorite-fade` positions are what bear on the experi
 **Narrative verdict [fill at end]:** [Did the favorite-fade basket outperform,
 underperform, or land near zero after fees? One paragraph for the paper.]
 
+### 12.4 Historical strategy backtest (built + RUN 2026-06-16)
+
+The most important open validation: the model is validated as a *forecaster*, but
+the *trading strategy* ("bet when model FV beats market by ≥3¢ net of fees in the
+reliable zone") has never been tested against historical market prices.
+
+**Built this session:** `scripts/29_backtest_trading_strategy.py`. It loads
+`backtest_predictions_recalibrated.parquet` (256 matches across 2010/2014/2018/
+2022; note the schema is `p_home_win/p_draw/p_away_win` with `elo_diff`/`home_elo`/
+`away_elo` already baked in — Elo gaps do NOT need reconstructing from
+`elo_history.parquet`, contrary to the handoff). It isolates group stage as the
+first 48 matches per tournament by date (verified clean: 2018 group ends 06-28,
+knockouts 06-30; 2022 group ends 12-02, knockouts 12-03 — `stage` column is all
+null so date-ordering is the reliable split). It reuses the live machinery exactly:
+fee model imported from `scripts/26_fee_model.py`, quarter-Kelly `f*=(p−a)/(1−a)`
+capped at 10% with a $5 floor, net edge `p−a−fee/contracts ≥ 3¢`, one position per
+match. De-vig is proportional normalization of 1/decimal across H/D/A (same idea
+as script 23). Tags: favorite-fade / favorite-boost / neutral via Elo favorite vs
+bet direction. Output: console report + `reports/backtest_strategy_<stamp>.{csv,md}`
+with P&L, win rate, ROI, by-tag and by-tournament breakdowns, and a calibration
+check. Engine smoke-tested end-to-end on synthetic odds (plumbing confirmed; those
+throwaway report files are marked VOID).
+
+**Odds source (resolved).** The handoff assumed `football-data.co.uk/new/
+WC2018.csv` — **these do not exist** (football-data.co.uk is domestic-league only;
+its sole WC file is `WorldCup2026.xlsx`). Odds were instead taken from BetExplorer
+results pages (WC-2018 and WC-2022), average-final 1X2 decimal odds, saved to
+`data/raw/wc_closing_odds.csv` (128 matches; 96 are group stage). Join is by
+team-pair with a date-nearest tiebreak (handles pairs that recur in group +
+third-place, e.g. England/Belgium '18, Croatia/Morocco '22) and a ±60-day sanity
+guard (rejects cross-tournament pair collisions; this is why 2010/2014 correctly
+yield 0 trades — we have no odds for them). Join matched 96/96 group matches, zero
+unmatched team names. Caveat: BetExplorer table odds are *average final*, a proxy
+for sharp closing, not a single book's close.
+
+**RESULTS (2018 + 2022 group stage, primary symmetric zone |elo_diff| ≤ 150):**
+
+| metric | value |
+|---|---|
+| qualifying trades | 42 |
+| win rate | 18/42 = 42.9% |
+| total P&L | **+$330.23** |
+| ROI on staked | +26.1% |
+| mean net edge *claimed* | +14.0¢ |
+| per-trade Sharpe-equiv | +0.16 |
+| favorite-boost | n=23, win 48%, **+$363.82 (+48.9%)** |
+| favorite-fade | n=18, win 33%, **−$42.10 (−8.4%)** |
+| neutral | n=1, +$8.51 |
+
+**VERDICT — positive headline, but NOT a robust or bankable edge, and it does
+NOT validate the live book.** Three load-bearing observations:
+
+1. **The total P&L is filter-fragile.** Re-running with the handoff's literal
+   *signed* window (−50, +150) gives only +$65 / +8.1% ROI (Sharpe +0.05) and
+   *flips the tag attribution*: there fade is +14.4% and boost is +1.1%. A result
+   that inverts its own driver when you nudge the zone definition is noise, not
+   signal. Per-trade Sharpe ≈ 0 under both definitions.
+
+2. **The favorite-fade thesis — the entire basis of the 3 open live positions —
+   loses money under the primary zone (−8.4%) and is only marginally positive
+   under the alternate.** There is no stable historical support for scaling the
+   fade book. (Under the symmetric zone the profit is all favorite-*boost*, i.e.
+   backing favorites the model thinks are *under*priced — the opposite trade.)
+
+3. **The model systematically over-claims edge.** Mean *claimed* net edge is ~14¢
+   yet realized win rate is 42.9%. The entry gate fires precisely where the model
+   most disagrees with the market, and historically the market was closer to right
+   in those spots. The 3¢-edge filter is not selecting genuine value at the
+   magnitude the model reports.
+
+**Implication for the live experiment:** keep position sizes minimal for the rest
+of the tournament (this is the handoff's own contingency for an ambiguous
+backtest). Do **not** add more favorite-fade. Hold the 3 open positions to
+settlement as already decided (attribution requires it), but treat them as a noise
+test, not a validated edge. If anything, the symmetric-zone result weakly favors
+*favorite-boost* candidates for any future trades — though that too is small-sample
+(n=23) and should not be over-trusted.
+
+**Caveats / limitations:** small samples (12–23 trades per tag); average-final
+(not sharp closing) odds; the backtest's reliable zone is a raw Elo window, whereas
+the *live* pricer (script 02) uses the richer model_card Elo-gap stratum gate
+(n≥30, |Δexp|≤0.05) — a fidelity gap worth closing before drawing firmer
+conclusions; sizing is summed across overlapping matches, so "ROI on staked" (not
+absolute $) is the honest comparison. Re-run: `uv run python
+scripts/29_backtest_trading_strategy.py --odds data/raw/wc_closing_odds.csv`.
+
 ## 13. Live 2026 tracking (in progress)
 
 A parallel, capital-free validation track, independent of the paper-trading

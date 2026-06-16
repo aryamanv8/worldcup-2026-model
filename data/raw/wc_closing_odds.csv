@@ -1,0 +1,129 @@
+date,home_team,away_team,dec_home,dec_draw,dec_away
+2018-06-14,Russia,Saudi Arabia,1.44,4.35,8.80
+2018-06-15,Egypt,Uruguay,6.50,3.80,1.60
+2018-06-15,Morocco,Iran,2.25,3.00,3.75
+2018-06-15,Portugal,Spain,4.00,3.30,2.05
+2018-06-16,France,Australia,1.25,6.00,13.00
+2018-06-16,Argentina,Iceland,1.35,4.75,11.00
+2018-06-16,Peru,Denmark,3.25,3.20,2.40
+2018-06-16,Croatia,Nigeria,1.75,3.60,5.25
+2018-06-17,Costa Rica,Serbia,4.50,3.30,1.95
+2018-06-17,Germany,Mexico,1.45,4.50,7.50
+2018-06-17,Brazil,Switzerland,1.40,4.60,8.50
+2018-06-18,Sweden,South Korea,2.05,3.25,4.00
+2018-06-18,Belgium,Panama,1.18,7.50,18.00
+2018-06-18,Tunisia,England,8.50,4.30,1.45
+2018-06-19,Colombia,Japan,1.70,3.60,5.50
+2018-06-19,Poland,Senegal,2.35,3.10,3.40
+2018-06-19,Russia,Egypt,2.05,3.20,4.10
+2018-06-20,Portugal,Morocco,1.65,3.75,6.00
+2018-06-20,Uruguay,Saudi Arabia,1.18,7.50,18.00
+2018-06-20,Iran,Spain,18.00,6.50,1.20
+2018-06-21,Denmark,Australia,1.90,3.40,4.50
+2018-06-21,France,Peru,1.55,4.00,6.50
+2018-06-21,Argentina,Croatia,2.10,3.30,3.80
+2018-06-22,Brazil,Costa Rica,1.22,6.50,15.00
+2018-06-22,Nigeria,Iceland,2.75,3.10,2.80
+2018-06-22,Serbia,Switzerland,2.80,3.00,2.80
+2018-06-23,Belgium,Tunisia,1.35,5.25,9.50
+2018-06-23,South Korea,Mexico,5.50,3.75,1.70
+2018-06-23,Germany,Sweden,1.50,4.33,7.00
+2018-06-24,England,Panama,1.20,6.50,18.00
+2018-06-24,Japan,Senegal,3.40,3.20,2.30
+2018-06-24,Poland,Colombia,3.30,3.40,2.25
+2018-06-25,Uruguay,Russia,2.60,3.00,3.00
+2018-06-25,Saudi Arabia,Egypt,4.50,3.60,1.85
+2018-06-25,Spain,Morocco,1.35,5.00,10.00
+2018-06-25,Iran,Portugal,5.50,3.70,1.70
+2018-06-26,Denmark,France,4.50,2.60,2.30
+2018-06-26,Australia,Peru,3.10,3.40,2.40
+2018-06-26,Nigeria,Argentina,6.00,4.50,1.55
+2018-06-26,Iceland,Croatia,3.40,3.25,2.25
+2018-06-27,South Korea,Germany,15.00,7.50,1.20
+2018-06-27,Mexico,Sweden,2.40,3.30,3.10
+2018-06-27,Serbia,Brazil,6.50,4.00,1.55
+2018-06-27,Switzerland,Costa Rica,1.75,3.30,5.50
+2018-06-28,Japan,Poland,2.60,3.10,2.95
+2018-06-28,Senegal,Colombia,4.20,3.50,1.90
+2018-06-28,England,Belgium,2.65,3.10,2.90
+2018-06-28,Panama,Tunisia,4.20,3.60,1.85
+2018-06-30,France,Argentina,2.40,3.10,3.30
+2018-06-30,Uruguay,Portugal,2.80,3.00,2.80
+2018-07-01,Spain,Russia,1.60,3.80,6.50
+2018-07-01,Croatia,Denmark,1.85,3.30,4.80
+2018-07-02,Brazil,Mexico,1.50,4.20,7.50
+2018-07-02,Belgium,Japan,1.40,4.75,8.50
+2018-07-03,Sweden,Switzerland,3.00,3.00,2.60
+2018-07-03,Colombia,England,3.80,3.10,2.15
+2018-07-06,Uruguay,France,4.33,3.10,2.05
+2018-07-06,Brazil,Belgium,2.15,3.40,3.50
+2018-07-07,Sweden,England,4.50,3.30,1.95
+2018-07-07,Russia,Croatia,3.80,3.10,2.20
+2018-07-10,France,Belgium,2.50,3.20,3.00
+2018-07-11,Croatia,England,3.50,3.10,2.30
+2018-07-14,Belgium,England,2.20,3.60,3.25
+2018-07-15,France,Croatia,1.90,3.30,4.75
+2022-11-20,Qatar,Ecuador,3.40,3.10,2.30
+2022-11-21,England,Iran,1.35,4.75,10.50
+2022-11-21,Senegal,Netherlands,6.00,3.80,1.60
+2022-11-21,USA,Wales,2.40,3.00,3.30
+2022-11-22,Argentina,Saudi Arabia,1.15,8.00,21.00
+2022-11-22,Denmark,Tunisia,1.60,3.80,6.25
+2022-11-22,Mexico,Poland,2.70,3.00,2.90
+2022-11-22,France,Australia,1.28,6.00,11.00
+2022-11-23,Morocco,Croatia,3.80,3.20,2.10
+2022-11-23,Germany,Japan,1.45,4.75,7.00
+2022-11-23,Spain,Costa Rica,1.16,7.50,18.00
+2022-11-23,Belgium,Canada,1.50,4.50,6.50
+2022-11-24,Switzerland,Cameroon,1.75,3.50,5.25
+2022-11-24,Uruguay,South Korea,1.75,3.50,5.25
+2022-11-24,Portugal,Ghana,1.40,4.75,8.50
+2022-11-24,Brazil,Serbia,1.50,4.33,7.00
+2022-11-25,Wales,Iran,2.15,3.10,3.80
+2022-11-25,Qatar,Senegal,6.00,3.80,1.65
+2022-11-25,Netherlands,Ecuador,1.80,3.50,4.75
+2022-11-25,England,USA,1.55,4.20,6.50
+2022-11-26,Tunisia,Australia,2.15,3.20,3.75
+2022-11-26,Poland,Saudi Arabia,1.75,3.60,5.00
+2022-11-26,France,Denmark,1.80,3.50,4.75
+2022-11-26,Argentina,Mexico,1.55,4.00,6.50
+2022-11-27,Japan,Costa Rica,1.45,4.33,8.00
+2022-11-27,Belgium,Morocco,2.00,3.40,3.90
+2022-11-27,Croatia,Canada,2.10,3.40,3.60
+2022-11-27,Spain,Germany,2.35,3.50,2.90
+2022-11-28,Cameroon,Serbia,4.75,3.60,1.80
+2022-11-28,South Korea,Ghana,2.50,3.10,3.10
+2022-11-28,Brazil,Switzerland,1.50,4.20,7.00
+2022-11-28,Portugal,Uruguay,2.00,3.40,4.00
+2022-11-29,Ecuador,Senegal,2.45,3.20,3.10
+2022-11-29,Netherlands,Qatar,1.20,7.00,15.00
+2022-11-29,Iran,USA,3.80,3.40,2.05
+2022-11-29,Wales,England,7.50,4.33,1.45
+2022-11-30,Australia,Denmark,7.00,4.20,1.50
+2022-11-30,Tunisia,France,6.50,4.00,1.55
+2022-11-30,Poland,Argentina,7.50,4.20,1.48
+2022-11-30,Saudi Arabia,Mexico,4.75,4.20,1.65
+2022-12-01,Croatia,Belgium,2.65,3.40,2.65
+2022-12-01,Canada,Morocco,3.60,3.30,2.15
+2022-12-01,Japan,Spain,8.00,4.50,1.40
+2022-12-01,Costa Rica,Germany,21.00,10.00,1.10
+2022-12-02,South Korea,Portugal,4.50,4.00,1.75
+2022-12-02,Ghana,Uruguay,4.75,3.80,1.75
+2022-12-02,Serbia,Switzerland,2.60,3.30,2.75
+2022-12-02,Cameroon,Brazil,11.00,5.50,1.30
+2022-12-03,Netherlands,USA,1.95,3.30,4.33
+2022-12-03,Argentina,Australia,1.20,6.50,16.00
+2022-12-04,France,Poland,1.30,5.25,11.00
+2022-12-04,England,Senegal,1.53,3.90,7.50
+2022-12-05,Japan,Croatia,3.80,3.25,2.10
+2022-12-05,Brazil,South Korea,1.25,6.00,12.00
+2022-12-06,Morocco,Spain,6.50,3.80,1.60
+2022-12-06,Portugal,Switzerland,1.90,3.40,4.50
+2022-12-09,Croatia,Brazil,8.50,4.60,1.40
+2022-12-09,Netherlands,Argentina,3.50,3.10,2.25
+2022-12-10,Morocco,Portugal,5.75,3.60,1.70
+2022-12-10,England,France,3.00,3.20,2.45
+2022-12-13,Argentina,Croatia,1.80,3.40,5.00
+2022-12-14,France,Morocco,1.55,3.90,7.00
+2022-12-17,Croatia,Morocco,2.35,3.40,3.10
+2022-12-18,Argentina,France,2.80,3.00,2.80
