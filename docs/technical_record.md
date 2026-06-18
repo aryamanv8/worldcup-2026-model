@@ -400,6 +400,17 @@ the thesis; the three open `favorite-fade` positions are what bear on the experi
 
 **#4 — Ecuador vs Germany (settles 2026-06-25).** [To be filled.]
 
+**#5 — Mexico vs Korea Republic (opened 2026-06-18, settles 2026-06-18).** New
+position added outside the opening book. BUY YES @ Mexico (Mexico to win in
+regulation), 31 ct @ 48¢, cost $15.43, model FV 0.543, net edge +4.5¢, tag
+**favorite-boost** — the first live `favorite-boost` position, the side the §12.4
+backtest actually favored. Edge is thin-to-breakeven once the §12.4 over-claim
+haircut and lineup news are applied: César Montes suspended (starting CB in a
+back-three) and Julián Quiñones doubtful both push Mexico's true win prob down
+toward the market-implied ~48%. Entered at full slate size (31 ct) by user
+decision despite the recommendation to size down. OPEN, settles tonight. [Result
+to be filled.]
+
 ### 12.3 Final book summary [fill at tournament end — paper pulls from here]
 
 | Metric | Value |

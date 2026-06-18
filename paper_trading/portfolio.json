@@ -1,8 +1,27 @@
 {
   "bankroll_start": 500.0,
-  "cash": 416.59,
-  "realized_pnl": 15.19,
+  "cash": 401.16,
+  "realized_pnl": -13.48,
   "open": [
+    {
+      "id": 5,
+      "opened": "2026-06-18",
+      "fixture": "Mexico vs Korea Republic",
+      "match_prefix": "KXWCGAME-26JUN18MEXKOR",
+      "ticker": "KXWCGAME-26JUN18MEXKOR-MEX",
+      "outcome_code": "MEX",
+      "outcome_label": "Mexico",
+      "side": "yes",
+      "entry": 0.48,
+      "qty": 31,
+      "fee": 0.55,
+      "model_fv": 0.543,
+      "net_edge": 0.045,
+      "match_date": "2026-06-18",
+      "tag": "favorite-boost",
+      "cost": 15.43,
+      "closing": null
+    },
     {
       "id": 2,
       "opened": "2026-06-13",
@@ -40,25 +59,6 @@
       "tag": "favorite-fade",
       "cost": 38.33,
       "closing": null
-    },
-    {
-      "id": 4,
-      "opened": "2026-06-13",
-      "fixture": "Austria vs Jordan",
-      "match_prefix": "KXWCGAME-26JUN17AUTJOR",
-      "ticker": "KXWCGAME-26JUN17AUTJOR-AUT",
-      "outcome_code": "AUT",
-      "outcome_label": "Austria",
-      "side": "no",
-      "entry": 0.27,
-      "qty": 101,
-      "fee": 1.4,
-      "model_fv": 0.43,
-      "net_edge": 0.146,
-      "match_date": "2026-06-17",
-      "tag": "favorite-fade",
-      "cost": 28.67,
-      "closing": null
     }
   ],
   "settled": [
@@ -85,7 +85,31 @@
       "bet_won": true,
       "payoff": 27.0,
       "realized_pnl": 15.19
+    },
+    {
+      "id": 4,
+      "opened": "2026-06-13",
+      "fixture": "Austria vs Jordan",
+      "match_prefix": "KXWCGAME-26JUN17AUTJOR",
+      "ticker": "KXWCGAME-26JUN17AUTJOR-AUT",
+      "outcome_code": "AUT",
+      "outcome_label": "Austria",
+      "side": "no",
+      "entry": 0.27,
+      "qty": 101,
+      "fee": 1.4,
+      "model_fv": 0.43,
+      "net_edge": 0.146,
+      "match_date": "2026-06-17",
+      "tag": "favorite-fade",
+      "cost": 28.67,
+      "closing": null,
+      "settled": "2026-06-18",
+      "winner": "AUT",
+      "bet_won": false,
+      "payoff": 0.0,
+      "realized_pnl": -28.67
     }
   ],
-  "updated_utc": "2026-06-14T04:47:08.295152+00:00"
+  "updated_utc": "2026-06-18T07:30:00.000000+00:00"
 }

@@ -11,12 +11,12 @@
 |---|---|
 | As of | 2026-06-18 |
 | Starting bankroll | $500.00 |
-| Cash | $416.59 |
-| Open exposure (cost basis) | $69.93 |
+| Cash | $401.16 |
+| Open exposure (cost basis) | $85.36 |
 | Realized P&L | −$13.48 |
 | Unrealized P&L | $0.00 (cost-basis only, not marked-to-market) |
 | **Total equity** | **$486.52** |
-| Open positions | 2 |
+| Open positions | 3 |
 | Settled trades | 2 |
 | Win rate (settled) | 50% (1/2) — see note below |
 
@@ -35,6 +35,17 @@
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
 | 1 | 2026-06-13 | Turkiye vs Paraguay | KXWCGAME-26JUN19TURPAR-PAR | BUY YES | 24 | 125 | 30.00 | 1.60 | 31.60 | 42.3 | +17.0 | Paraguay; Elo +48, reliable; favorite-fade |
 | 2 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
+| 3 | 2026-06-18 | Mexico vs Korea Republic | KXWCGAME-26JUN18MEXKOR-MEX | BUY YES | 48 | 31 | 14.88 | 0.55 | 15.43 | 54.3 | +4.5 | Mexico to win in reg; favorite-boost; thin edge — Montes susp., Quiñones doubt |
+
+### OPEN — 2026-06-18
+
+**Mexico vs Korea Republic** · Thu Jun 18, 2026 · group stage
+- Bet: **BUY YES @ Mexico** (Mexico to win in regulation)
+- Market: KXWCGAME-26JUN18MEXKOR-MEX
+- Entry 0.48 · Qty 31 · Stake $14.88 + fee $0.55 = **cost $15.43**
+- Model FV (Mexico reg. win) 0.543 · net edge +4.5¢/ct · tag: favorite-boost
+- Lineup caveats at entry: César Montes suspended (starting CB), Julián Quiñones doubtful; edge is thin-to-breakeven after §12.4 haircut. Entered at full slate size (31 ct) by user decision.
+- Payoff if win: **+$15.57**; if lose: **−$15.43** · Settles regulation result · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
 
 ### OPEN — 2026-06-13
 
