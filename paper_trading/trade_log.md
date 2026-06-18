@@ -9,21 +9,23 @@
 
 | Metric | Value |
 |---|---|
-| As of | 2026-06-13 |
+| As of | 2026-06-18 |
 | Starting bankroll | $500.00 |
 | Cash | $416.59 |
-| Open exposure (cost basis) | $98.60 |
-| Realized P&L | +$15.19 |
+| Open exposure (cost basis) | $69.93 |
+| Realized P&L | −$13.48 |
 | Unrealized P&L | $0.00 (cost-basis only, not marked-to-market) |
-| **Total equity** | **$515.19** |
-| Open positions | 3 |
-| Settled trades | 1 |
-| Win rate (settled) | 100% (1/1) — see note below |
+| **Total equity** | **$486.52** |
+| Open positions | 2 |
+| Settled trades | 2 |
+| Win rate (settled) | 50% (1/2) — see note below |
 
-> **Note on win rate:** the one settled trade (Brazil vs Morocco, tag `reliable`)
-> is a near-even matchup, not part of the `favorite-fade` thesis. The three open
-> `favorite-fade` positions are the actual experiment (technical record §12);
-> 1/1 here says nothing about that question yet.
+> **Note on win rate:** the two settled trades split — Brazil vs Morocco (tag
+> `reliable`, a near-even matchup) won; Austria vs Jordan (tag `favorite-fade`)
+> lost. The favorite-fade thesis is now 0/1 live (Austria), with two more fades
+> open (Paraguay, Germany). This is the first live evidence on the question the
+> experiment actually cares about (technical record §12), and it's consistent
+> with the backtest's caution against favorite-fade.
 
 ---
 
@@ -33,7 +35,6 @@
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
 | 1 | 2026-06-13 | Turkiye vs Paraguay | KXWCGAME-26JUN19TURPAR-PAR | BUY YES | 24 | 125 | 30.00 | 1.60 | 31.60 | 42.3 | +17.0 | Paraguay; Elo +48, reliable; favorite-fade |
 | 2 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
-| 3 | 2026-06-13 | Austria vs Jordan | KXWCGAME-26JUN17AUTJOR-AUT | BUY NO | 27 | 101 | 27.27 | 1.40 | 28.67 | 43.0 | +14.6 | Austria not to win in reg; Elo +110, reliable; favorite-fade |
 
 ### OPEN — 2026-06-13
 
@@ -51,13 +52,6 @@
 - Model FV (NO) 0.614 · net edge +14.7¢/ct · Elo +26, reliable · tag: favorite-fade
 - Payoff if win: **+$43.67**; if lose: **−$38.33** · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
 
-**Austria vs Jordan** · Wed Jun 17, 2026 · group stage
-- Bet: **BUY NO @ Austria** (Austria does not win in regulation)
-- Market: KXWCGAME-26JUN17AUTJOR-AUT
-- Entry 0.27 · Qty 101 · Stake $27.27 + fee $1.40 = **cost $28.67**
-- Model FV (NO) 0.430 · net edge +14.6¢/ct · Elo +110, reliable · tag: favorite-fade
-- Payoff if win: **+$72.33**; if lose: **−$28.67** · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
-
 ---
 
 ## Settled trades
@@ -65,6 +59,17 @@
 | # | Opened | Settled | Match | Side | Entry ¢ | Qty | Cost $ | Outcome | Payoff $ | Realized P&L $ | Bankroll $ |
 |---|--------|---------|--------|------|---------|-----|--------|---------|----------|----------------|------------|
 | 1 | 2026-06-12 | 2026-06-13 | Brazil vs Morocco | BUY NO @ Brazil | 42 | 27 | 11.81 | TIE 1-1 (reg.) | 27.00 | +15.19 | 515.19 |
+| 4 | 2026-06-13 | 2026-06-18 | Austria vs Jordan | BUY NO @ Austria | 27 | 101 | 28.67 | AUT win 3-1 (reg.) | 0.00 | −28.67 | 486.52 |
+
+### SETTLED — 2026-06-18
+
+**Austria vs Jordan** · Wed Jun 17, 2026 · group stage
+- Bet: **BUY NO @ Austria** (Austria does not win in regulation)
+- Market: KXWCGAME-26JUN17AUTJOR-AUT
+- Entry ask: 0.27 · Contracts: 101 · Stake: $27.27 + fee $1.40 = **cost $28.67**
+- Model fair value (NO): 0.430 · net edge +14.6¢/ct · Elo +110, reliable · tag: favorite-fade
+- Result: **Austria won 3-1 (reg.)** → NO @ Austria settles **LOST**
+- Payoff: $0.00 · **Realized P&L: −$28.67** · Status: **SETTLED — LOSS**
 
 ### SETTLED — 2026-06-13
 
@@ -86,6 +91,7 @@
 |------|-------|----------------|----------------|------|
 | 2026-06-12 | Portfolio opened | 0.00 | 500.00 | $500 paper bankroll |
 | 2026-06-13 | Brazil vs Morocco settled (NO @ Brazil, TIE 1-1) | +15.19 | 515.19 | tag: reliable; near-even matchup, not favorite-fade |
+| 2026-06-18 | Austria vs Jordan settled (NO @ Austria, AUT win 3-1) | −28.67 | 486.52 | tag: favorite-fade; first live fade result — a loss |
 
 ---
 
