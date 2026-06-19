@@ -11,21 +11,23 @@
 |---|---|
 | As of | 2026-06-18 |
 | Starting bankroll | $500.00 |
-| Cash | $401.16 |
-| Open exposure (cost basis) | $85.36 |
-| Realized P&L | −$13.48 |
+| Cash | $427.89 |
+| Open exposure (cost basis) | $69.93 |
+| Realized P&L | −$2.18 |
 | Unrealized P&L | $0.00 (cost-basis only, not marked-to-market) |
-| **Total equity** | **$486.52** |
-| Open positions | 3 |
-| Settled trades | 2 |
-| Win rate (settled) | 50% (1/2) — see note below |
+| **Total equity** | **$497.82** |
+| Open positions | 2 |
+| Settled trades | 3 |
+| Win rate (settled) | 67% (2/3) — see note below |
 
-> **Note on win rate:** the two settled trades split — Brazil vs Morocco (tag
-> `reliable`, a near-even matchup) won; Austria vs Jordan (tag `favorite-fade`)
-> lost. The favorite-fade thesis is now 0/1 live (Austria), with two more fades
-> open (Paraguay, Germany). This is the first live evidence on the question the
-> experiment actually cares about (technical record §12), and it's consistent
-> with the backtest's caution against favorite-fade.
+> **Note on win rate:** three settled trades — Brazil vs Morocco (tag `reliable`,
+> a near-even matchup) won; Austria vs Jordan (tag `favorite-fade`) lost; Mexico
+> vs Korea (tag `favorite-boost`) closed early for a gain. The favorite-fade
+> thesis is still 0/1 live (Austria), with two more fades open (Paraguay,
+> Germany) — that basket is what bears on the experiment. The Mexico result is a
+> profitable **early cash-out** (sold before settlement, not held to the
+> regulation result), so it speaks to exit timing rather than the favorite-boost
+> edge holding to settlement.
 
 ---
 
@@ -35,17 +37,6 @@
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
 | 1 | 2026-06-13 | Turkiye vs Paraguay | KXWCGAME-26JUN19TURPAR-PAR | BUY YES | 24 | 125 | 30.00 | 1.60 | 31.60 | 42.3 | +17.0 | Paraguay; Elo +48, reliable; favorite-fade |
 | 2 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
-| 3 | 2026-06-18 | Mexico vs Korea Republic | KXWCGAME-26JUN18MEXKOR-MEX | BUY YES | 48 | 31 | 14.88 | 0.55 | 15.43 | 54.3 | +4.5 | Mexico to win in reg; favorite-boost; thin edge — Montes susp., Quiñones doubt |
-
-### OPEN — 2026-06-18
-
-**Mexico vs Korea Republic** · Thu Jun 18, 2026 · group stage
-- Bet: **BUY YES @ Mexico** (Mexico to win in regulation)
-- Market: KXWCGAME-26JUN18MEXKOR-MEX
-- Entry 0.48 · Qty 31 · Stake $14.88 + fee $0.55 = **cost $15.43**
-- Model FV (Mexico reg. win) 0.543 · net edge +4.5¢/ct · tag: favorite-boost
-- Lineup caveats at entry: César Montes suspended (starting CB), Julián Quiñones doubtful; edge is thin-to-breakeven after §12.4 haircut. Entered at full slate size (31 ct) by user decision.
-- Payoff if win: **+$15.57**; if lose: **−$15.43** · Settles regulation result · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
 
 ### OPEN — 2026-06-13
 
@@ -71,6 +62,17 @@
 |---|--------|---------|--------|------|---------|-----|--------|---------|----------|----------------|------------|
 | 1 | 2026-06-12 | 2026-06-13 | Brazil vs Morocco | BUY NO @ Brazil | 42 | 27 | 11.81 | TIE 1-1 (reg.) | 27.00 | +15.19 | 515.19 |
 | 4 | 2026-06-13 | 2026-06-18 | Austria vs Jordan | BUY NO @ Austria | 27 | 101 | 28.67 | AUT win 3-1 (reg.) | 0.00 | −28.67 | 486.52 |
+| 5 | 2026-06-18 | 2026-06-18 | Mexico vs Korea Republic | BUY YES @ Mexico | 48 | 31 | 15.43 | Early cash-out @ ~86¢ | 26.73 | +11.30 | 497.82 |
+
+### SETTLED — 2026-06-18 (cash-out)
+
+**Mexico vs Korea Republic** · Thu Jun 18, 2026 · group stage
+- Bet: **BUY YES @ Mexico** (Mexico to win in regulation) · tag: favorite-boost
+- Market: KXWCGAME-26JUN18MEXKOR-MEX
+- Entry 0.48 · Qty 31 · cost **$15.43** (user-quoted $15.42; 1¢ fee rounding — booked basis kept at $15.43)
+- Exit: **closed early before settlement** for proceeds **$26.73** (≈86¢/ct net of exit fee)
+- **Realized P&L: +$11.30** (26.73 − 15.43) · Bankroll: $486.52 → **$497.82** · Status: **SETTLED — CASH-OUT (gain)**
+- Note: profitable exit taken before the regulation result; does not test whether the favorite-boost edge holds to settlement.
 
 ### SETTLED — 2026-06-18
 
@@ -103,6 +105,7 @@
 | 2026-06-12 | Portfolio opened | 0.00 | 500.00 | $500 paper bankroll |
 | 2026-06-13 | Brazil vs Morocco settled (NO @ Brazil, TIE 1-1) | +15.19 | 515.19 | tag: reliable; near-even matchup, not favorite-fade |
 | 2026-06-18 | Austria vs Jordan settled (NO @ Austria, AUT win 3-1) | −28.67 | 486.52 | tag: favorite-fade; first live fade result — a loss |
+| 2026-06-18 | Mexico vs Korea cashed out early (YES @ Mexico, proceeds $26.73) | +11.30 | 497.82 | tag: favorite-boost; early exit for a gain, not held to settlement |
 
 ---
 

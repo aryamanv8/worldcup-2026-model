@@ -408,8 +408,12 @@ backtest actually favored. Edge is thin-to-breakeven once the §12.4 over-claim
 haircut and lineup news are applied: César Montes suspended (starting CB in a
 back-three) and Julián Quiñones doubtful both push Mexico's true win prob down
 toward the market-implied ~48%. Entered at full slate size (31 ct) by user
-decision despite the recommendation to size down. OPEN, settles tonight. [Result
-to be filled.]
+decision despite the recommendation to size down. **Closed early (cash-out)
+2026-06-18** before the regulation result: sold for proceeds $26.73 (≈86¢/ct net)
+against $15.43 cost → **realized +$11.30**. Bankroll $486.52 → $497.82. Caveat
+for attribution: this is a profitable *early exit on a price move*, not the
+favorite-boost edge resolving at settlement, so it bears on exit timing rather
+than the §12.4 thesis. The favorite-boost question remains untested live.
 
 ### 12.3 Final book summary [fill at tournament end — paper pulls from here]
 

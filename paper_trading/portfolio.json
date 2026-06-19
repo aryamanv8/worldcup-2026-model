@@ -1,27 +1,8 @@
 {
   "bankroll_start": 500.0,
-  "cash": 401.16,
-  "realized_pnl": -13.48,
+  "cash": 427.89,
+  "realized_pnl": -2.18,
   "open": [
-    {
-      "id": 5,
-      "opened": "2026-06-18",
-      "fixture": "Mexico vs Korea Republic",
-      "match_prefix": "KXWCGAME-26JUN18MEXKOR",
-      "ticker": "KXWCGAME-26JUN18MEXKOR-MEX",
-      "outcome_code": "MEX",
-      "outcome_label": "Mexico",
-      "side": "yes",
-      "entry": 0.48,
-      "qty": 31,
-      "fee": 0.55,
-      "model_fv": 0.543,
-      "net_edge": 0.045,
-      "match_date": "2026-06-18",
-      "tag": "favorite-boost",
-      "cost": 15.43,
-      "closing": null
-    },
     {
       "id": 2,
       "opened": "2026-06-13",
@@ -109,7 +90,32 @@
       "bet_won": false,
       "payoff": 0.0,
       "realized_pnl": -28.67
+    },
+    {
+      "id": 5,
+      "opened": "2026-06-18",
+      "fixture": "Mexico vs Korea Republic",
+      "match_prefix": "KXWCGAME-26JUN18MEXKOR",
+      "ticker": "KXWCGAME-26JUN18MEXKOR-MEX",
+      "outcome_code": "MEX",
+      "outcome_label": "Mexico",
+      "side": "yes",
+      "entry": 0.48,
+      "qty": 31,
+      "fee": 0.55,
+      "model_fv": 0.543,
+      "net_edge": 0.045,
+      "match_date": "2026-06-18",
+      "tag": "favorite-boost",
+      "cost": 15.43,
+      "closing": 0.862,
+      "settled": "2026-06-18",
+      "winner": "CASHOUT",
+      "bet_won": true,
+      "early_exit": true,
+      "payoff": 26.73,
+      "realized_pnl": 11.30
     }
   ],
-  "updated_utc": "2026-06-18T07:30:00.000000+00:00"
+  "updated_utc": "2026-06-18T07:35:00.000000+00:00"
 }
