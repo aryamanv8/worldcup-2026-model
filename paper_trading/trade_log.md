@@ -9,25 +9,26 @@
 
 | Metric | Value |
 |---|---|
-| As of | 2026-06-18 |
+| As of | 2026-06-21 |
 | Starting bankroll | $500.00 |
-| Cash | $427.89 |
-| Open exposure (cost basis) | $69.93 |
-| Realized P&L | −$2.18 |
+| Cash | $552.89 |
+| Open exposure (cost basis) | $38.33 |
+| Realized P&L | +$91.22 |
 | Unrealized P&L | $0.00 (cost-basis only, not marked-to-market) |
-| **Total equity** | **$497.82** |
-| Open positions | 2 |
-| Settled trades | 3 |
-| Win rate (settled) | 67% (2/3) — see note below |
+| **Total equity** | **$591.22** |
+| Open positions | 1 |
+| Settled trades | 4 |
+| Win rate (settled) | 75% (3/4) — see note below |
 
-> **Note on win rate:** three settled trades — Brazil vs Morocco (tag `reliable`,
-> a near-even matchup) won; Austria vs Jordan (tag `favorite-fade`) lost; Mexico
-> vs Korea (tag `favorite-boost`) closed early for a gain. The favorite-fade
-> thesis is still 0/1 live (Austria), with two more fades open (Paraguay,
-> Germany) — that basket is what bears on the experiment. The Mexico result is a
-> profitable **early cash-out** (sold before settlement, not held to the
-> regulation result), so it speaks to exit timing rather than the favorite-boost
-> edge holding to settlement.
+> **Note on win rate:** four settled trades — Brazil vs Morocco (tag `reliable`,
+> a near-even matchup) won; Turkiye vs Paraguay (tag `favorite-fade`) won;
+> Austria vs Jordan (tag `favorite-fade`) lost; Mexico vs Korea (tag
+> `favorite-boost`) closed early for a gain. The favorite-fade thesis is now
+> **1/2 live** (Paraguay won, Austria lost), with one fade still open (Germany) —
+> that basket is what bears on the experiment. The Mexico result is a profitable
+> **early cash-out** (sold before settlement, not held to the regulation result),
+> so it speaks to exit timing rather than the favorite-boost edge holding to
+> settlement.
 
 ---
 
@@ -35,17 +36,9 @@
 
 | # | Opened | Market | Ticker | Side | Entry ¢ | Qty | Stake $ | Fee $ | Cost $ | Model FV % | Net edge ¢ | Notes |
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
-| 1 | 2026-06-13 | Turkiye vs Paraguay | KXWCGAME-26JUN19TURPAR-PAR | BUY YES | 24 | 125 | 30.00 | 1.60 | 31.60 | 42.3 | +17.0 | Paraguay; Elo +48, reliable; favorite-fade |
 | 2 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
 
 ### OPEN — 2026-06-13
-
-**Turkiye vs Paraguay** · Fri Jun 19, 2026 · group stage
-- Bet: **BUY YES @ Paraguay** (model makes Paraguay the favorite over Turkiye)
-- Market: KXWCGAME-26JUN19TURPAR-PAR
-- Entry 0.24 · Qty 125 · Stake $30.00 + fee $1.60 = **cost $31.60**
-- Model FV (Paraguay) 0.423 · net edge +17.0¢/ct · Elo +48, reliable · tag: favorite-fade
-- Payoff if win: **+$93.40**; if lose: **−$31.60** · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
 
 **Ecuador vs Germany** · Thu Jun 25, 2026 · group stage
 - Bet: **BUY NO @ Germany** (Germany does not win in regulation)
@@ -61,8 +54,19 @@
 | # | Opened | Settled | Match | Side | Entry ¢ | Qty | Cost $ | Outcome | Payoff $ | Realized P&L $ | Bankroll $ |
 |---|--------|---------|--------|------|---------|-----|--------|---------|----------|----------------|------------|
 | 1 | 2026-06-12 | 2026-06-13 | Brazil vs Morocco | BUY NO @ Brazil | 42 | 27 | 11.81 | TIE 1-1 (reg.) | 27.00 | +15.19 | 515.19 |
+| 2 | 2026-06-13 | 2026-06-21 | Turkiye vs Paraguay | BUY YES @ Paraguay | 24 | 125 | 31.60 | PAR win 1-0 (reg.) | 125.00 | +93.40 | 591.22 |
 | 4 | 2026-06-13 | 2026-06-18 | Austria vs Jordan | BUY NO @ Austria | 27 | 101 | 28.67 | AUT win 3-1 (reg.) | 0.00 | −28.67 | 486.52 |
 | 5 | 2026-06-18 | 2026-06-18 | Mexico vs Korea Republic | BUY YES @ Mexico | 48 | 31 | 15.43 | Early cash-out @ ~86¢ | 26.73 | +11.30 | 497.82 |
+
+### SETTLED — 2026-06-21
+
+**Turkiye vs Paraguay** · Fri Jun 19, 2026 · group stage
+- Bet: **BUY YES @ Paraguay** (model made Paraguay the favorite over Turkiye) · tag: favorite-fade
+- Market: KXWCGAME-26JUN19TURPAR-PAR
+- Entry 0.24 · Qty 125 · Stake $30.00 + fee $1.60 = **cost $31.60**
+- Model fair value (Paraguay): 0.423 · net edge +17.0¢/ct · Elo +48, reliable · tag: favorite-fade
+- Result: **Turkey 0–1 Paraguay (reg.)** (Santa Clara; source `data/raw/results.csv`) → YES @ Paraguay settles **WIN**
+- Payoff: $125.00 · **Realized P&L: +$93.40** · Status: **SETTLED — WIN**
 
 ### SETTLED — 2026-06-18 (cash-out)
 
@@ -106,6 +110,7 @@
 | 2026-06-13 | Brazil vs Morocco settled (NO @ Brazil, TIE 1-1) | +15.19 | 515.19 | tag: reliable; near-even matchup, not favorite-fade |
 | 2026-06-18 | Austria vs Jordan settled (NO @ Austria, AUT win 3-1) | −28.67 | 486.52 | tag: favorite-fade; first live fade result — a loss |
 | 2026-06-18 | Mexico vs Korea cashed out early (YES @ Mexico, proceeds $26.73) | +11.30 | 497.82 | tag: favorite-boost; early exit for a gain, not held to settlement |
+| 2026-06-21 | Turkiye vs Paraguay settled (YES @ Paraguay, PAR win 1-0) | +93.40 | 591.22 | tag: favorite-fade; first favorite-fade win held to settlement |
 
 ---
 

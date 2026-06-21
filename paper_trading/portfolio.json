@@ -1,27 +1,8 @@
 {
   "bankroll_start": 500.0,
-  "cash": 427.89,
-  "realized_pnl": -2.18,
+  "cash": 552.89,
+  "realized_pnl": 91.22,
   "open": [
-    {
-      "id": 2,
-      "opened": "2026-06-13",
-      "fixture": "Turkiye vs Paraguay",
-      "match_prefix": "KXWCGAME-26JUN19TURPAR",
-      "ticker": "KXWCGAME-26JUN19TURPAR-PAR",
-      "outcome_code": "PAR",
-      "outcome_label": "Paraguay",
-      "side": "yes",
-      "entry": 0.24,
-      "qty": 125,
-      "fee": 1.6,
-      "model_fv": 0.423,
-      "net_edge": 0.17,
-      "match_date": "2026-06-19",
-      "tag": "favorite-fade",
-      "cost": 31.6,
-      "closing": null
-    },
     {
       "id": 3,
       "opened": "2026-06-13",
@@ -114,8 +95,32 @@
       "bet_won": true,
       "early_exit": true,
       "payoff": 26.73,
-      "realized_pnl": 11.30
+      "realized_pnl": 11.3
+    },
+    {
+      "id": 2,
+      "opened": "2026-06-13",
+      "fixture": "Turkiye vs Paraguay",
+      "match_prefix": "KXWCGAME-26JUN19TURPAR",
+      "ticker": "KXWCGAME-26JUN19TURPAR-PAR",
+      "outcome_code": "PAR",
+      "outcome_label": "Paraguay",
+      "side": "yes",
+      "entry": 0.24,
+      "qty": 125,
+      "fee": 1.6,
+      "model_fv": 0.423,
+      "net_edge": 0.17,
+      "match_date": "2026-06-19",
+      "tag": "favorite-fade",
+      "cost": 31.6,
+      "closing": null,
+      "settled": "2026-06-21",
+      "winner": "PAR",
+      "bet_won": true,
+      "payoff": 125.0,
+      "realized_pnl": 93.4
     }
   ],
-  "updated_utc": "2026-06-18T07:35:00.000000+00:00"
+  "updated_utc": "2026-06-21T13:49:12.435737+00:00"
 }
