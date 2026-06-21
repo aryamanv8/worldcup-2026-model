@@ -41,7 +41,7 @@ echo "morning.sh — ${DATE}" | tee -a "$LOG"
 
 # 1) settlement side: refresh results, settle due positions, score the model
 step "fetch results"        uv run python scripts/01_fetch_results.py
-step "settle positions"     uv run python paper_trading/scripts/03_settle.py
+step "settle positions"     uv run python paper_trading/scripts/03_settle.py --auto
 step "score live model"     uv run python scripts/28_score_live_predictions.py
 
 # 2) markets side: discover/refresh Kalshi match markets, price vs model (show ALL
