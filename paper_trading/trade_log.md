@@ -9,16 +9,16 @@
 
 | Metric | Value |
 |---|---|
-| As of | 2026-06-21 |
+| As of | 2026-06-24 |
 | Starting bankroll | $500.00 |
-| Cash | $538.25 |
-| Open exposure (cost basis) | $52.97 |
-| Realized P&L | +$91.22 |
+| Cash | $570.25 |
+| Open exposure (cost basis) | $38.33 |
+| Realized P&L | +$108.58 |
 | Unrealized P&L | $0.00 (cost-basis only, not marked-to-market) |
-| **Total equity** | **$591.22** |
-| Open positions | 2 |
-| Settled trades | 4 |
-| Win rate (settled) | 75% (3/4) — see note below |
+| **Total equity** | **$608.58** |
+| Open positions | 1 |
+| Settled trades | 5 |
+| Win rate (settled) | 80% (4/5) — see note below |
 
 > **Note on win rate:** four settled trades — Brazil vs Morocco (tag `reliable`,
 > a near-even matchup) won; Turkiye vs Paraguay (tag `favorite-fade`) won;
@@ -28,7 +28,8 @@
 > that basket is what bears on the experiment. The Mexico result is a profitable
 > **early cash-out** (sold before settlement, not held to the regulation result),
 > so it speaks to exit timing rather than the favorite-boost edge holding to
-> settlement.
+> settlement. Norway vs Senegal (tag `favorite-boost`) won held-to-settlement
+> (Norway 3–2), the first favorite-boost result actually carried to the whistle.
 
 ---
 
@@ -37,18 +38,6 @@
 | # | Opened | Market | Ticker | Side | Entry ¢ | Qty | Stake $ | Fee $ | Cost $ | Model FV % | Net edge ¢ | Notes |
 |---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
 | 2 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
-| 6 | 2026-06-21 | Norway vs Senegal | KXWCGAME-26JUN22NORSEN-NOR | BUY YES | 44 | 32 | 14.08 | 0.56 | 14.64 | 50.5 | +4.7 | Norway to win in reg; tag favorite-boost; minimal size (pricer slate, not Kelly-scaled-up); ⚠ lineup unverified at booking |
-
-### OPEN — 2026-06-21
-
-**Norway vs Senegal** · Mon Jun 22, 2026 · group stage
-- Bet: **BUY YES @ Norway** (Norway wins in regulation)
-- Market: KXWCGAME-26JUN22NORSEN-NOR
-- Entry 0.44 · Qty 32 · Stake $14.08 + fee $0.56 = **cost $14.64**
-- Model FV (Norway) 0.505 · net edge +4.7¢/ct · tag: favorite-boost (model has Norway a marginal favorite; market priced them ~0.44)
-- Payoff if win: **+$17.36**; if lose: **−$14.64** · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
-- Sizing note: booked at the pricer's minimal quarter-Kelly slate size (32 ct), **not** the larger size implied by re-running Kelly on the grown $591 bankroll — per handoff §2.3 / §10 (don't scale up).
-- ⚠ Pre-trade note: the §2.5 lineup check (expected XI, Haaland availability, Senegal injuries/suspensions) was **not** verifiable at booking (no internet in the digest sandbox). Confirm before treating as live; real fill may differ from 44¢.
 
 ### OPEN — 2026-06-13
 
@@ -69,6 +58,18 @@
 | 2 | 2026-06-13 | 2026-06-21 | Turkiye vs Paraguay | BUY YES @ Paraguay | 24 | 125 | 31.60 | PAR win 1-0 (reg.) | 125.00 | +93.40 | 591.22 |
 | 4 | 2026-06-13 | 2026-06-18 | Austria vs Jordan | BUY NO @ Austria | 27 | 101 | 28.67 | AUT win 3-1 (reg.) | 0.00 | −28.67 | 486.52 |
 | 5 | 2026-06-18 | 2026-06-18 | Mexico vs Korea Republic | BUY YES @ Mexico | 48 | 31 | 15.43 | Early cash-out @ ~86¢ | 26.73 | +11.30 | 497.82 |
+| 6 | 2026-06-21 | 2026-06-24 | Norway vs Senegal | BUY YES @ Norway | 44 | 32 | 14.64 | NOR win 3-2 (reg.) | 32.00 | +17.36 | 608.58 |
+
+### SETTLED — 2026-06-24
+
+**Norway vs Senegal** · Mon Jun 22, 2026 · group stage
+- Bet: **BUY YES @ Norway** (Norway wins in regulation) · tag: favorite-boost
+- Market: KXWCGAME-26JUN22NORSEN-NOR
+- Entry 0.44 · Qty 32 · Stake $14.08 + fee $0.56 = **cost $14.64**
+- Model fair value (Norway): 0.505 · net edge +4.7¢/ct · tag: favorite-boost
+- Result: **Norway 3–2 Senegal (reg.)** (source `data/raw/results.csv`) → YES @ Norway settles **WIN**
+- Payoff: $32.00 · **Realized P&L: +$17.36** · Bankroll: $591.22 → **$608.58** · Status: **SETTLED — WIN**
+- Note: first favorite-boost position held to settlement (the Mexico boost was an early cash-out), so this is the first clean held-to-whistle favorite-boost data point.
 
 ### SETTLED — 2026-06-21
 
@@ -123,6 +124,7 @@
 | 2026-06-18 | Austria vs Jordan settled (NO @ Austria, AUT win 3-1) | −28.67 | 486.52 | tag: favorite-fade; first live fade result — a loss |
 | 2026-06-18 | Mexico vs Korea cashed out early (YES @ Mexico, proceeds $26.73) | +11.30 | 497.82 | tag: favorite-boost; early exit for a gain, not held to settlement |
 | 2026-06-21 | Turkiye vs Paraguay settled (YES @ Paraguay, PAR win 1-0) | +93.40 | 591.22 | tag: favorite-fade; first favorite-fade win held to settlement |
+| 2026-06-24 | Norway vs Senegal settled (YES @ Norway, NOR win 3-2) | +17.36 | 608.58 | tag: favorite-boost; first favorite-boost win held to settlement |
 
 ---
 
