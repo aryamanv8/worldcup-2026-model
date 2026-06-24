@@ -1,27 +1,8 @@
 {
   "bankroll_start": 500.0,
-  "cash": 538.25,
-  "realized_pnl": 91.22,
+  "cash": 570.25,
+  "realized_pnl": 108.58,
   "open": [
-    {
-      "id": 6,
-      "opened": "2026-06-21",
-      "fixture": "Norway vs Senegal",
-      "match_prefix": "KXWCGAME-26JUN22NORSEN",
-      "ticker": "KXWCGAME-26JUN22NORSEN-NOR",
-      "outcome_code": "NOR",
-      "outcome_label": "Norway",
-      "side": "yes",
-      "entry": 0.44,
-      "qty": 32,
-      "fee": 0.56,
-      "model_fv": 0.505,
-      "net_edge": 0.047,
-      "match_date": "2026-06-22",
-      "tag": "favorite-boost",
-      "cost": 14.64,
-      "closing": null
-    },
     {
       "id": 3,
       "opened": "2026-06-13",
@@ -139,7 +120,31 @@
       "bet_won": true,
       "payoff": 125.0,
       "realized_pnl": 93.4
+    },
+    {
+      "id": 6,
+      "opened": "2026-06-21",
+      "fixture": "Norway vs Senegal",
+      "match_prefix": "KXWCGAME-26JUN22NORSEN",
+      "ticker": "KXWCGAME-26JUN22NORSEN-NOR",
+      "outcome_code": "NOR",
+      "outcome_label": "Norway",
+      "side": "yes",
+      "entry": 0.44,
+      "qty": 32,
+      "fee": 0.56,
+      "model_fv": 0.505,
+      "net_edge": 0.047,
+      "match_date": "2026-06-22",
+      "tag": "favorite-boost",
+      "cost": 14.64,
+      "closing": null,
+      "settled": "2026-06-24",
+      "winner": "NOR",
+      "bet_won": true,
+      "payoff": 32.0,
+      "realized_pnl": 17.36
     }
   ],
-  "updated_utc": "2026-06-21T16:00:00.000000+00:00"
+  "updated_utc": "2026-06-24T00:42:10.469521+00:00"
 }

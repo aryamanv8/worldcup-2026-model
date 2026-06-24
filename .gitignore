@@ -35,3 +35,8 @@ questions.md
 # Daily auto-generated pipeline outputs (regenerated each morning by scripts/morning.sh)
 reports/daily/
 reports/trade_ideas_*.md
+
+# Scraper byproducts (diagnostic dumps; the real data is data/raw/wc_goals_odds.csv)
+data/raw/results_page_*.html
+data/raw/results_links_*.txt
+data/raw/goals_odds_capture.jsonl

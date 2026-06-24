@@ -48,7 +48,24 @@ step "score live model"     uv run python scripts/28_score_live_predictions.py
 #    candidates incl. capped/deferred/out-of-zone so the digest can surface options)
 step "discover markets"     uv run python paper_trading/scripts/01_discover_match_markets.py
 step "price markets"        uv run python paper_trading/scripts/02_price_match_markets.py \
-                                --bankroll "$BANKROLL" --show-all --max-deploy 0.20
+                                --bankroll "$BANKROLL" --show-all --max-deploy 0.50
+
+# 2b) Strategy v2 sleeves (see docs/strategy_v2.md)
+#   - calibration gate writes data/processed/derived_calibration.json (per-market
+#     pass flags). Cheap + deterministic; rerunning keeps rho fresh.
+#   - goals sleeve (totals/BTTS) priced with the market-blend correction + guards.
+#   - progression sleeve needs a fresh outright snapshot (22 -> 23) before pricing.
+step "calibrate derived"    uv run python scripts/30_backtest_derived_calibration.py
+# BTTS sleeve = TINY LIVE EXPERIMENT only. Script 31 found no robust edge after vig
+# (see docs/strategy_v2.md §9), so this is sized small to gather forward evidence,
+# restricted to BTTS (the only line we backtested), capped ~2%/trade, ~6% total.
+step "price derived"        uv run python paper_trading/scripts/04_price_derived_markets.py \
+                                --bankroll "$BANKROLL" --show-all --markets btts \
+                                --max-deploy 0.06 --position-cap 0.02
+step "discover outrights"   uv run python scripts/22_kalshi_discover.py
+step "map model-vs-market"  uv run python scripts/23_map_model_vs_market.py
+step "price advance"        uv run python paper_trading/scripts/05_price_advance_markets.py \
+                                --bankroll "$BANKROLL"
 
 # 3) collect today's artifacts for Claude to read
 cp -f paper_trading/portfolio.json "$OUT/portfolio.json" 2>>"$LOG" || true
@@ -56,6 +73,12 @@ LATEST_SLATE_MD="$(ls -t paper_trading/data/trade_slate_*.md 2>/dev/null | head 
 LATEST_SLATE_JSON="$(ls -t paper_trading/data/trade_slate_*.json 2>/dev/null | head -1 || true)"
 [ -n "${LATEST_SLATE_MD:-}" ]   && cp -f "$LATEST_SLATE_MD"   "$OUT/trade_slate.md"   2>>"$LOG" || true
 [ -n "${LATEST_SLATE_JSON:-}" ] && cp -f "$LATEST_SLATE_JSON" "$OUT/trade_slate.json" 2>>"$LOG" || true
+# v2 sleeve slates + calibration gate
+cp -f paper_trading/data/derived_slate.md   "$OUT/derived_slate.md"   2>>"$LOG" || true
+cp -f paper_trading/data/derived_slate.json "$OUT/derived_slate.json" 2>>"$LOG" || true
+cp -f paper_trading/data/advance_slate.md   "$OUT/advance_slate.md"   2>>"$LOG" || true
+cp -f paper_trading/data/advance_slate.json "$OUT/advance_slate.json" 2>>"$LOG" || true
+cp -f data/processed/derived_calibration.json "$OUT/derived_calibration.json" 2>>"$LOG" || true
 
 # marker file the Claude task checks ("did today's pipeline run?")
 python3 - "$OUT" "$DATE" <<'PY' 2>>"$LOG" || true

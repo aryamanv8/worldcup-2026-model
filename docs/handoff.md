@@ -28,21 +28,43 @@ Repo: `github.com/aryamanv8/worldcup-2026-model`.
 
 ## 2. CURRENT APPROACH & STANDING DECISIONS (read this before acting)
 
-These are settled. Treat them as the operating rules until real settled results
-give us a reason to revisit:
+**Strategy v2 (adopted 2026-06-24) — full rationale in `docs/strategy_v2.md`.**
+The old "favorite-fade / favorite-boost" framing is RETIRED. It was a label on the
+single market we traded (per-match win-in-regulation), not a strategy. We now trade
+any market the model can price *and* has been shown to calibrate, with every edge
+corrected toward the market before we believe it.
+
+Standing rules until real settled results give us reason to revisit:
 
 1. **Model is frozen.** Do not retrain or modify it. Changing it mid-tournament
    destroys the clean live experiment.
-2. **Hold all open positions to settlement.** No hedging, no early exit —
-   attribution requires it.
-3. **Keep any new position sizes minimal.** The backtest did not earn the right to
-   bet bigger (see §4).
-4. **Add NO new favorite-fade trades.** That is the one style the backtest actively
-   warns against, and the current book is already fully concentrated in it.
-5. **Lineup check before any new position.** Confirm expected XI / no key
-   injury-suspension before entering. This is a human pre-trade filter, not code.
-6. **Honest negative results beat optimistic spin.** Record notable findings in
-   `technical_record.md` as they happen.
+2. **Correct before you believe the edge.** No leg trades on raw model edge.
+   Blend the model toward the market mid (`paper_trading/scripts/lib_correction.py`,
+   default w=0.5) and gate on the *corrected* net edge >= 3c after fees. A leg with
+   no market quote to anchor the correction is not tradeable.
+3. **Trade only calibrated surfaces.** Moneyline is validated. The goals sleeve
+   (totals/BTTS) trades a line ONLY if it passed
+   `scripts/30_backtest_derived_calibration.py` (per-market flag in
+   `data/processed/derived_calibration.json`). Out of the box that is `over_1.5`
+   and `btts`; **`over_2.5` is BLOCKED** (model under-predicts mid-range goals).
+   **BTTS P&L backtest (script 31) found no robust edge after vig** (strategy_v2 §9),
+   so BTTS runs live only as a **tiny experiment** (`morning.sh`: `--markets btts
+   --max-deploy 0.06 --position-cap 0.02`). `over_1.5` is calibrated but P&L-untested
+   (odds unarchived) → not live yet.
+4. **Exit policy by sleeve.** Per-match markets are held to settlement (clean
+   attribution). Progression markets (advance / champion) use the rule-based
+   take-profit in `05_price_advance_markets.py` — pre-set exit logged at entry, no
+   ad-hoc cash-outs.
+5. **Keep new position sizes minimal** and treat same-match legs ACROSS sleeves
+   (moneyline NO-fav, YES-under, BTTS-NO) as one correlated bet for the deploy cap.
+6. **Lineup check before any new position.** Confirm expected XI / no key
+   injury-suspension before entering. Human pre-trade filter, not code.
+7. **Honest negative results beat optimistic spin.** Record notable findings in
+   `technical_record.md` as they happen. (The `over_2.5` block above is exactly
+   this rule working.)
+
+> The old rules 2 (hold-everything) and 4 (no-new-fades) are superseded by the
+> sleeve-specific exit policy and the calibration/correction gates above.
 
 ---
 
@@ -202,7 +224,7 @@ Mac is awake AND the Claude app is open.
 
 ---
 
-## 11. Planned build — daily trade-ideas digest (NOT yet built)
+## 11. Daily trade-ideas digest (BUILT — updated for Strategy v2)
 
 **Goal (Aryaman's vision, 2026-06-16):** each morning when Claude opens, run the
 whole pipeline and produce a ranked list of *potential* trades — fixtures, fresh
@@ -211,31 +233,45 @@ intuition and current-position context. **It should surface candidates even when
 the book is full and we don't intend to trade**, purely so we can see the options
 and learn. This is an analysis/ideation tool, not an auto-trader.
 
+**v2 update (2026-06-24):** the digest now spans THREE sleeves, not just moneyline.
+`morning.sh` runs them all and writes the slates the digest reads:
+`trade_slate.*` (moneyline), `derived_slate.*` (totals/BTTS), `advance_slate.*`
+(progression + take-profit), plus `derived_calibration.json` (which goals lines are
+gated in). Every edge in those slates is already CORRECTED (model blended toward
+market); the digest reasons on corrected edges, never raw ones.
+
 ### What it should do, each run
-1. **Refresh data:** latest results/fixtures (`scripts/01_fetch_results.py`) and the
-   live Kalshi match markets (`paper_trading/scripts/01_discover_match_markets.py`).
-2. **Detect what changed:** which markets are NEW or have MOVED since yesterday.
-   `paper_trading/data/` already stores timestamped snapshots
-   (`match_markets_<ts>.json`) — diff today's vs the last to flag new/updated lines.
-3. **Price + size:** run `paper_trading/scripts/02_price_match_markets.py`, which
-   already emits a trade slate with model FV, net edge, quarter-Kelly sizing, fees,
-   and a deferred list. Run it in "show everything" mode so capped/deferred and
-   out-of-zone candidates still appear (it has `--show-all` and `--max-deploy`).
+1. **Refresh data:** results (`scripts/01_fetch_results.py`), match markets
+   (`01_discover_match_markets.py`), outright/advance markets (`22` → `23`). All run
+   by `morning.sh`.
+2. **Detect what changed:** which markets are NEW or have MOVED since yesterday
+   (timestamped snapshots in `paper_trading/data/`). Flag ≥2¢ mid moves / new tickers.
+3. **Price + size (all sleeves):** read the three slates `morning.sh` emits —
+   moneyline (`02`, `--show-all`), goals (`04`, correction + liquidity/divergence/
+   caps), progression (`05`, entries + take-profit). All carry corrected edge,
+   quarter-Kelly sizing, fees, and a deferred/suppressed list.
 4. **Run the simulator if useful** (`scripts/10_run_simulation.py`) for tournament
    context on the fixtures involved.
 5. **Reasoning layer (the part that's more than scripts):** for each candidate,
    add judgment, not just numbers —
-   - correlation vs the current open book (flag if it doubles up the existing
-     all-favorite-fade concentration);
-   - the backtest context (§4): favorite-fade is weak/negative, favorite-boost is
-     the only weakly-supported direction, the model over-claims edge ~14¢;
+   - **trust the suppression flags:** thin-market and large model-vs-market
+     divergence legs are SUPPRESSED for a reason (the model is wrong there, not the
+     market) — do not resurrect them;
+   - **correlation across sleeves:** a moneyline NO-fav, a YES-under, and a BTTS-NO
+     on the SAME match are one bet — count them once against the per-position cap;
+   - **corrected vs claimed edge:** if `shrunk_by` is large the model disagreed a
+     lot with the market; treat the residual edge with extra suspicion;
+   - **goals sleeve is gated:** only lines passing `derived_calibration.json`
+     (currently `over_1.5`, `btts`; `over_2.5` BLOCKED) may be endorsed;
+   - **progression take-profit:** surface any `SELL` flags from `advance_slate`;
    - a lineup-news check (expected XI, injuries/suspensions) before endorsing;
    - the standing rules in §2.
 6. **Output:** a dated digest (`reports/trade_ideas_<date>.md`) + a chat summary,
-   with two clearly separated buckets:
-   - **Actionable now** (passes filters AND fits the book / caps / §2 rules);
-   - **Informational only** (real candidates we are NOT placing — full book,
-     favorite-fade, out-of-zone, or sub-threshold) — shown *with the reason* it's
+   with two clearly separated buckets, now spanning all three sleeves:
+   - **Actionable now** (passes the gate + corrected-edge + liquidity/divergence
+     filters AND fits the caps / §2 rules);
+   - **Informational only** (real candidates we are NOT placing — capped/deferred,
+     suppressed, blocked line, or sub-threshold) — shown *with the reason* it's
      parked. This is the "let me see options anyway" bucket Aryaman asked for.
 
 ### Execution environment — RESOLVED + VERIFIED 2026-06-16
@@ -256,17 +292,20 @@ digest's reasoning/formatting against more real slates as the tournament runs.
   flagging (e.g. ≥2¢ mid move, or any new ticker).
 
 ### Guardrails (do not drift)
-The digest must respect §2: it can *show* favorite-fade and full-book ideas, but it
-must label them informational and must never present scaling-up or new fades as
-recommended. Honest framing over a long idea list.
+The digest must respect §2 (v2 rules): it can *show* suppressed, blocked, capped, or
+divergent ideas, but must label them informational and never present a suppressed
+leg, a blocked goals line (e.g. over_2.5), or a cap-busting add as recommended.
+Honest framing over a long idea list. The correction is not optional — an edge is
+only real after blending toward the market.
 
 ## 12. Session prompt (for a fresh Claude conversation)
 
 > You're picking up a Python + data-science project, worldcup-2026-model
 > (~/Projects/worldcup-2026-model). Read `docs/handoff.md` and `docs/technical_record.md`
 > §12.4 first. Scripts run with `uv run python` from the repo root, on the Mac.
-> Honor the standing decisions in handoff §2 (model frozen; hold positions to
-> settlement; minimal sizing; no new favorite-fade; lineup check first).
+> Honor the standing decisions in handoff §2 (Strategy v2: model frozen; correct
+> every edge toward the market; trade only calibrated/gated surfaces; sleeve-specific
+> exit policy; correlation-grouped caps; lineup check first). See docs/strategy_v2.md.
 > Tell me what's settled since 2026-06-16. The likely headline task is building the
 > daily trade-ideas digest (handoff §11) — start by resolving its "execution
 > environment" design decision with me before writing code. Then propose next steps

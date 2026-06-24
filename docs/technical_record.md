@@ -723,4 +723,77 @@ Football Betting Market", and the World Football Elo rating system. Use
 \bibitem in a plain thebibliography environment — no BibTeX file needed.
 
 Please output the complete LaTeX source, compilable with pdflatex.
+
+---
+
+## 15. Strategy v2 — corrected, multi-sleeve trading (2026-06-24)
+
+Full operating spec in `docs/strategy_v2.md`; this is the methods/results record.
+
+**Motivation.** Two findings retired the "favorite-fade / favorite-boost" framing
+(which was only ever a label on the single market we traded). (1) The live 2026
+scorecard showed the frozen model is now a good *forecaster* — by 2026-06-24 it beat
+both the flat and base-rate baselines (mean log loss 0.938 vs 1.099 / 1.009; top-pick
+accuracy 0.61). (2) The §12.4 strategy backtest showed raw model "edge" is fiction
+(~14¢ claimed, 43% realized), because the model over-states the unlikely tail. So the
+problem was never direction — it was trusting the uncorrected model.
+
+**Correction layer (`paper_trading/scripts/lib_correction.py`).** Every edge is now
+computed against a fair value blended toward the market mid:
+`fv = w·model + (1−w)·market`, default `w=0.5`; `edge = fv − ask − fee`. De-vig uses
+the YES bid/ask midpoint. `fit_blend_weight()` can tune `w` by live log loss once
+enough settled quoted legs exist. Pure-numpy, self-tested.
+
+**Sleeves and what the model can price.** The engine emits a full joint scoreline
+matrix per match + a 50k-path tournament simulation, so its native outputs are richer
+than moneyline:
+- Moneyline (validated, live).
+- Totals (over/under) and BTTS — native to a goals model; `KXWCTOTAL`/`KXWCBTTS`
+  are liquid on Kalshi.
+- Advance / make-knockouts / champion — from `tournament_probs.parquet`.
+- Spread/AH (helper ready, deferred); parlays (deferred — multiply miscalibration);
+  player/event props (OUT — no player-level model or data feed).
+
+**Calibration gate (`scripts/30_backtest_derived_calibration.py`).** Totals/BTTS were
+never scored, so a per-market gate validates them on the 256-match OOS WC backtest
+before they may trade. Result (rho −0.0246): **`btts` (bin MAE 0.004) and `over_1.5`
+(MAE 0.028) PASS; `over_2.5` FAILS** (MAE 0.110 — the model under-predicts mid-range
+goals) along with the extreme lines. Per-market flags in `derived_calibration.json`;
+the pricer keys off them.
+
+**Goals-sleeve P&L backtest (`scripts/31_backtest_derived_strategy.py`).** Mirrors
+§12.4's method (join model probs to historical closing odds, quarter-Kelly, fees) but
+for the corrected goals sleeve. Historical WC BTTS closing odds were scraped from
+BetExplorer via `scripts/fetch_goals_odds.py` (local Playwright; the `/results/` page
+shows only knockout matches — the 48 group games live under the `?stage=` tabs without
+an `activecountry` param). Coverage: **97/128 matches, all margins clean.**
+Result — **no robust edge after vig**: at the default `w=0.5` with realistic margin the
+strategy fires only ~2 bets; a real sample appears only at `w=1.0` (raw model: ~23
+bets, +20% ROI, 48% win) — small and fragile, the same pattern as §12.4. BTTS is near a
+coin-flip; the calibration edge mostly evaporates once the margin is paid unless we
+lean on the over-confident raw model.
+
+**Decision.** Run BTTS as a **tiny live experiment** (not a validated edge):
+`morning.sh` prices the derived sleeve `--markets btts --max-deploy 0.06
+--position-cap 0.02` (≈6% of bankroll total, ≈2% per bet), all guards on. Revisit after
+~a dozen live settlements. `over_1.5` is calibrated but P&L-untested (odds unarchived);
+not live. `over_2.5` blocked.
+
+**Risk policy revision.** Quarter-Kelly on the corrected edge is the conviction sizer;
+per-position cap 10% enforced on **correlation groups** (same fixture across sleeves =
+one bet); total deploy cap raised 20%→50% (configurable); plus a **liquidity floor**
+(min volume) and a **max-divergence guard** (suppress legs where |model−market|>0.25 —
+the Colombia/Congo-DR case: model 44% vs liquid market 10% = model wrong, not edge).
+
+**Progression sleeve (`05_price_advance_markets.py`).** Built: prices team-to-advance /
+champion from the simulator with the correction, and a rule-based take-profit
+(sell-into-appreciation) since our edge there decays as results arrive. The 2026-06-24
+run produced **no entry candidates** — consistent with Stage 2's finding of no value
+edge on liquid outrights. Not independently P&L-backtested (historical futures odds
+snapshots are not available). Champion is take-profit-only by default.
+
+**Pipeline.** `morning.sh` now runs 30 → 04 (btts, tiny) → 22/23 → 05 and collects all
+slates; the digest spec (handoff §11) reasons over all sleeves with the correction and
+guard flags. The forecasting model remains frozen throughout — only the trading layer
+changed.
 ```
