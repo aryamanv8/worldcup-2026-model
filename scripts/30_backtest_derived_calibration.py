@@ -210,7 +210,13 @@ def main() -> int:
          "markets": [{k: v for k, v in r.items() if k != "reliability"} for r in results]},
         indent=2))
     print(f"\nWrote {OUT_JSON} and reports/derived_calibration_{ts}.md")
-    return 0 if all_pass else 1
+    # This is a per-market gate, not an all-or-nothing test: some lines (over_2.5,
+    # over_0.5, ...) are EXPECTED to fail and stay blocked, the pricer keys off the
+    # per-market `pass` flags in the JSON. So a mixed pass/fail result is normal
+    # operation, not a pipeline error. Exit 0 whenever the script ran and wrote its
+    # output; `all_pass` is still recorded in the JSON for reference. (Returning 1
+    # on !all_pass is what made morning.sh log [FAIL] every single day.)
+    return 0
 
 
 if __name__ == "__main__":

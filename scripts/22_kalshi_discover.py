@@ -47,9 +47,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_PARQUET = REPO_ROOT / "data" / "processed" / "kalshi_wc_contracts.parquet"
 OUT_CSV = REPO_ROOT / "data" / "processed" / "kalshi_wc_contracts.csv"
 
-BASE = "https://external-api.kalshi.com/trade-api/v2"
-# Fallback base if the above is unreachable on your network:
-BASE_ALT = "https://api.kalshi.com/trade-api/v2"
+# Primary host: the live Kalshi API host, same one paper_trading/scripts/
+# 01_discover_match_markets.py connects to successfully. The older
+# external-api/api.kalshi.com hostnames no longer resolve (DNS NameResolutionError),
+# which is why this step used to FAIL every morning. Kept as fallbacks just in case.
+BASE = "https://api.elections.kalshi.com/trade-api/v2"
+# Fallbacks if the above is unreachable on your network:
+BASE_ALT = "https://external-api.kalshi.com/trade-api/v2"
 
 # Known/likely World Cup series tickers. KXMENWORLDCUP (winner) is confirmed live;
 # the others are educated guesses -- the script reports which actually resolve, and
