@@ -49,8 +49,11 @@ Standing rules until real settled results give us reason to revisit:
    and `btts`; **`over_2.5` is BLOCKED** (model under-predicts mid-range goals).
    **BTTS P&L backtest (script 31) found no robust edge after vig** (strategy_v2 §9),
    so BTTS runs live only as a **tiny experiment** (`morning.sh`: `--markets btts
-   --max-deploy 0.06 --position-cap 0.02`). `over_1.5` is calibrated but P&L-untested
-   (odds unarchived) → not live yet.
+   --max-deploy 0.06 --position-cap 0.02`). `over_1.5` calibrated but P&L-untested —
+   scraper now also captures O/U odds; backtest it before going live. The
+   **progression sleeve (script 05) is turned on as a tiny experiment** too
+   (`--max-deploy 0.06 --position-cap 0.02`, champion take-profit-only); it can't be
+   backtested (no historical futures odds) and usually finds nothing.
 4. **Exit policy by sleeve.** Per-match markets are held to settlement (clean
    attribution). Progression markets (advance / champion) use the rule-based
    take-profit in `05_price_advance_markets.py` — pre-set exit logged at entry, no

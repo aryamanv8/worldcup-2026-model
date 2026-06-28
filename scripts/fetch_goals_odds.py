@@ -107,6 +107,36 @@ def parse_avg_odds(text: str):
     return None, None
 
 
+def parse_ou_line(text: str, line: str = "1.5"):
+    """Best-effort: from the Over/Under tab text, the average Over/Under decimals for
+    the given total line. Returns (over, under) or (None, None). O/U layouts vary, so
+    if this misses, the raw text is still saved to the capture for offline parsing."""
+    # an average/Ø row that also names the line
+    for ln in text.splitlines():
+        if line in ln and ("average" in ln.lower() or "ø" in ln.lower()):
+            nums = re.findall(r"\b\d\.\d{2}\b", ln)
+            if len(nums) >= 2:
+                return float(nums[0]), float(nums[1])
+    # window just after an "Over/Under 1.5" / "1.5" header
+    m = re.search(r"(over/under\s*" + re.escape(line) + r"|\b" + re.escape(line) + r"\b)(.{0,160})",
+                  text, re.I | re.S)
+    if m:
+        nums = re.findall(r"\b\d\.\d{2}\b", m.group(2))
+        if len(nums) >= 2:
+            return float(nums[0]), float(nums[1])
+    return None, None
+
+
+def click_tab(page, labels) -> bool:
+    for sel in labels:
+        try:
+            page.click(sel, timeout=1500)
+            return True
+        except Exception:
+            continue
+    return False
+
+
 def append_capture(rec: dict):
     with open(CAPTURE, "a") as fh:
         fh.write(json.dumps(rec) + "\n")
@@ -125,9 +155,11 @@ def run(year: int, limit: int, headless: bool, dump_results: bool = False):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
-        page = browser.new_context(user_agent=(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")).new_page()
+        page = browser.new_context(
+            ignore_https_errors=True,   # bypass ERR_CERT_AUTHORITY_INVALID (Cloudflare/proxy cert)
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")).new_page()
 
         slug = f"world-cup-{year}"
         BASE = "https://www.betexplorer.com"
@@ -209,42 +241,44 @@ def run(year: int, limit: int, headless: bool, dump_results: bool = False):
             try:
                 page.goto(url, wait_until="domcontentloaded")
                 page.wait_for_timeout(1200)
-                # find + click the BTTS tab (several possible labels)
-                for sel in ("text=/both teams to score/i", "text=/BTTS/i",
-                            "a:has-text('BTTS')", "[data-bookmaker] >> text=BTTS"):
-                    try:
-                        page.click(sel, timeout=1500)
-                        break
-                    except Exception:
-                        continue
-                page.wait_for_timeout(1500)
-                body = page.inner_text("body")
-                # identify teams from the page title/heading
                 title = page.title()
                 teams = re.split(r"\s+-\s+|\s+vs\.?\s+", title.split("|")[0])
-                rec = {"url": url, "title": title,
-                       "captured_utc": datetime.now().astimezone().isoformat(),
-                       "odds_text_excerpt": body[:4000]}
-                append_capture(rec)
 
-                # try to match to a template row by team names
-                key = None
-                if len(teams) >= 2:
-                    key = frozenset((norm(teams[0]), norm(teams[1])))
+                # --- BTTS tab ---
+                click_tab(page, ("text=/both teams to score/i", "text=/BTTS/i",
+                                 "a:has-text('BTTS')", "[data-bookmaker] >> text=BTTS"))
+                page.wait_for_timeout(1400)
+                btts_body = page.inner_text("body")
+                yes, no = parse_avg_odds(btts_body)
+
+                # --- Over/Under tab (we want the 1.5 line) ---
+                click_tab(page, ("text=/over.?under/i", "a:has-text('O/U')",
+                                 "a:has-text('Over/Under')", "text=/\\bO\\/U\\b/i"))
+                page.wait_for_timeout(1400)
+                ou_body = page.inner_text("body")
+                over15, under15 = parse_ou_line(ou_body, "1.5")
+
+                append_capture({"url": url, "title": title,
+                                "captured_utc": datetime.now().astimezone().isoformat(),
+                                "btts_text": btts_body[:4000], "ou_text": ou_body[:6000]})
+
+                key = frozenset((norm(teams[0]), norm(teams[1]))) if len(teams) >= 2 else None
                 rows = df.index[(df["wc"] == year) & (df["_k"] == key)].tolist() if key else []
-                yes, no = parse_avg_odds(body)
                 tag = "no-row-match"
                 if rows:
                     i = rows[0]
-                    tag = "parsed" if yes else "captured-only"
+                    got = []
                     if yes:
+                        m = 1/yes + 1/no
                         df.at[i, "btts_yes"], df.at[i, "btts_no"] = yes, no
-                        # margin sanity
-                        margin = 1/yes + 1/no
-                        if not (1.0 < margin < 1.20):
-                            tag = f"parsed-SUSPECT-margin{margin:.2f}"
+                        got.append("btts" + ("!" if not (1.0 < m < 1.20) else ""))
+                    if over15:
+                        m = 1/over15 + 1/under15
+                        df.at[i, "over15"], df.at[i, "under15"] = over15, under15
+                        got.append("o15" + ("!" if not (1.0 < m < 1.20) else ""))
+                    tag = "+".join(got) if got else "captured-only"
                     df.drop(columns=["_k"]).to_csv(OUT_CSV, index=False)
-                print(f"  [{tag}] {title[:50]:<50} yes={yes} no={no}")
+                print(f"  [{tag:<14}] {title[:46]:<46} btts={yes}/{no} o15={over15}/{under15}")
                 filled += 1
                 page.wait_for_timeout(int(random.uniform(800, 2000)))
             except Exception as e:

@@ -1,28 +1,8 @@
 {
   "bankroll_start": 500.0,
-  "cash": 570.25,
-  "realized_pnl": 108.58,
-  "open": [
-    {
-      "id": 3,
-      "opened": "2026-06-13",
-      "fixture": "Ecuador vs Germany",
-      "match_prefix": "KXWCGAME-26JUN25ECUGER",
-      "ticker": "KXWCGAME-26JUN25ECUGER-GER",
-      "outcome_code": "GER",
-      "outcome_label": "Germany",
-      "side": "no",
-      "entry": 0.45,
-      "qty": 82,
-      "fee": 1.43,
-      "model_fv": 0.614,
-      "net_edge": 0.147,
-      "match_date": "2026-06-25",
-      "tag": "favorite-fade",
-      "cost": 38.33,
-      "closing": null
-    }
-  ],
+  "cash": 652.25,
+  "realized_pnl": 152.25,
+  "open": [],
   "settled": [
     {
       "id": 1,
@@ -144,7 +124,31 @@
       "bet_won": true,
       "payoff": 32.0,
       "realized_pnl": 17.36
+    },
+    {
+      "id": 3,
+      "opened": "2026-06-13",
+      "fixture": "Ecuador vs Germany",
+      "match_prefix": "KXWCGAME-26JUN25ECUGER",
+      "ticker": "KXWCGAME-26JUN25ECUGER-GER",
+      "outcome_code": "GER",
+      "outcome_label": "Germany",
+      "side": "no",
+      "entry": 0.45,
+      "qty": 82,
+      "fee": 1.43,
+      "model_fv": 0.614,
+      "net_edge": 0.147,
+      "match_date": "2026-06-25",
+      "tag": "favorite-fade",
+      "cost": 38.33,
+      "closing": null,
+      "settled": "2026-06-26",
+      "winner": "ECU",
+      "bet_won": true,
+      "payoff": 82.0,
+      "realized_pnl": 43.67
     }
   ],
-  "updated_utc": "2026-06-24T00:42:10.469521+00:00"
+  "updated_utc": "2026-06-26T23:43:33.569378+00:00"
 }

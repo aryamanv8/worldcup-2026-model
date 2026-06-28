@@ -64,8 +64,10 @@ step "price derived"        uv run python paper_trading/scripts/04_price_derived
                                 --max-deploy 0.06 --position-cap 0.02
 step "discover outrights"   uv run python scripts/22_kalshi_discover.py
 step "map model-vs-market"  uv run python scripts/23_map_model_vs_market.py
+# Progression sleeve = TINY LIVE EXPERIMENT (no backtest possible — no historical
+# futures-odds snapshots). Champion is take-profit-only; entries capped ~2%/~6%.
 step "price advance"        uv run python paper_trading/scripts/05_price_advance_markets.py \
-                                --bankroll "$BANKROLL"
+                                --bankroll "$BANKROLL" --max-deploy 0.06 --position-cap 0.02
 
 # 3) collect today's artifacts for Claude to read
 cp -f paper_trading/portfolio.json "$OUT/portfolio.json" 2>>"$LOG" || true

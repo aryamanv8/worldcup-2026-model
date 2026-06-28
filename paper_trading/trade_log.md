@@ -9,44 +9,35 @@
 
 | Metric | Value |
 |---|---|
-| As of | 2026-06-24 |
+| As of | 2026-06-27 |
 | Starting bankroll | $500.00 |
-| Cash | $570.25 |
-| Open exposure (cost basis) | $38.33 |
-| Realized P&L | +$108.58 |
+| Cash | $652.25 |
+| Open exposure (cost basis) | $0.00 |
+| Realized P&L | +$152.25 |
 | Unrealized P&L | $0.00 (cost-basis only, not marked-to-market) |
-| **Total equity** | **$608.58** |
-| Open positions | 1 |
-| Settled trades | 5 |
-| Win rate (settled) | 80% (4/5) — see note below |
+| **Total equity** | **$652.25** |
+| Open positions | 0 |
+| Settled trades | 6 |
+| Win rate (settled) | 83% (5/6) — see note below |
 
-> **Note on win rate:** four settled trades — Brazil vs Morocco (tag `reliable`,
+> **Note on win rate:** six settled trades — Brazil vs Morocco (tag `reliable`,
 > a near-even matchup) won; Turkiye vs Paraguay (tag `favorite-fade`) won;
-> Austria vs Jordan (tag `favorite-fade`) lost; Mexico vs Korea (tag
-> `favorite-boost`) closed early for a gain. The favorite-fade thesis is now
-> **1/2 live** (Paraguay won, Austria lost), with one fade still open (Germany) —
-> that basket is what bears on the experiment. The Mexico result is a profitable
-> **early cash-out** (sold before settlement, not held to the regulation result),
-> so it speaks to exit timing rather than the favorite-boost edge holding to
-> settlement. Norway vs Senegal (tag `favorite-boost`) won held-to-settlement
-> (Norway 3–2), the first favorite-boost result actually carried to the whistle.
+> Austria vs Jordan (tag `favorite-fade`) lost; Ecuador vs Germany (tag
+> `favorite-fade`) won; Mexico vs Korea (tag `favorite-boost`) closed early for a
+> gain; Norway vs Senegal (tag `favorite-boost`) won held-to-settlement. The
+> favorite-fade thesis is now **2/3 live** (Paraguay won, Germany won, Austria
+> lost) — that basket is what bears on the experiment. The Mexico result is a
+> profitable **early cash-out** (sold before settlement, not held to the
+> regulation result), so it speaks to exit timing rather than the favorite-boost
+> edge holding to settlement. Norway vs Senegal (tag `favorite-boost`) won
+> held-to-settlement (Norway 3–2), the first favorite-boost result actually
+> carried to the whistle. The book is now fully settled — no open positions.
 
 ---
 
 ## Open positions
 
-| # | Opened | Market | Ticker | Side | Entry ¢ | Qty | Stake $ | Fee $ | Cost $ | Model FV % | Net edge ¢ | Notes |
-|---|--------|--------|--------|------|---------|-----|---------|-------|--------|------------|------------|-------|
-| 2 | 2026-06-13 | Ecuador vs Germany | KXWCGAME-26JUN25ECUGER-GER | BUY NO | 45 | 82 | 36.90 | 1.43 | 38.33 | 61.4 | +14.7 | Germany not to win in reg; Elo +26, reliable; favorite-fade |
-
-### OPEN — 2026-06-13
-
-**Ecuador vs Germany** · Thu Jun 25, 2026 · group stage
-- Bet: **BUY NO @ Germany** (Germany does not win in regulation)
-- Market: KXWCGAME-26JUN25ECUGER-GER
-- Entry 0.45 · Qty 82 · Stake $36.90 + fee $1.43 = **cost $38.33**
-- Model FV (NO) 0.614 · net edge +14.7¢/ct · Elo +26, reliable · tag: favorite-fade
-- Payoff if win: **+$43.67**; if lose: **−$38.33** · Closing price: _(fill at kickoff)_ · Result: _(TBD)_ · Status: **OPEN**
+_None — the book is fully settled._
 
 ---
 
@@ -59,6 +50,18 @@
 | 4 | 2026-06-13 | 2026-06-18 | Austria vs Jordan | BUY NO @ Austria | 27 | 101 | 28.67 | AUT win 3-1 (reg.) | 0.00 | −28.67 | 486.52 |
 | 5 | 2026-06-18 | 2026-06-18 | Mexico vs Korea Republic | BUY YES @ Mexico | 48 | 31 | 15.43 | Early cash-out @ ~86¢ | 26.73 | +11.30 | 497.82 |
 | 6 | 2026-06-21 | 2026-06-24 | Norway vs Senegal | BUY YES @ Norway | 44 | 32 | 14.64 | NOR win 3-2 (reg.) | 32.00 | +17.36 | 608.58 |
+| 3 | 2026-06-13 | 2026-06-26 | Ecuador vs Germany | BUY NO @ Germany | 45 | 82 | 38.33 | ECU win (reg.) | 82.00 | +43.67 | 652.25 |
+
+### SETTLED — 2026-06-26
+
+**Ecuador vs Germany** · Thu Jun 25, 2026 · group stage
+- Bet: **BUY NO @ Germany** (Germany does not win in regulation) · tag: favorite-fade
+- Market: KXWCGAME-26JUN25ECUGER-GER
+- Entry 0.45 · Qty 82 · Stake $36.90 + fee $1.43 = **cost $38.33**
+- Model fair value (NO): 0.614 · net edge +14.7¢/ct · Elo +26, reliable · tag: favorite-fade
+- Result: **Ecuador won (reg.)** (source `data/raw/results.csv`) → NO @ Germany settles **WIN**
+- Payoff: $82.00 · **Realized P&L: +$43.67** · Bankroll: $608.58 → **$652.25** · Status: **SETTLED — WIN**
+- Note: third favorite-fade result held to settlement — the fade basket is now 2/3 (Paraguay won, Germany faded to a win, Austria lost).
 
 ### SETTLED — 2026-06-24
 
@@ -125,6 +128,7 @@
 | 2026-06-18 | Mexico vs Korea cashed out early (YES @ Mexico, proceeds $26.73) | +11.30 | 497.82 | tag: favorite-boost; early exit for a gain, not held to settlement |
 | 2026-06-21 | Turkiye vs Paraguay settled (YES @ Paraguay, PAR win 1-0) | +93.40 | 591.22 | tag: favorite-fade; first favorite-fade win held to settlement |
 | 2026-06-24 | Norway vs Senegal settled (YES @ Norway, NOR win 3-2) | +17.36 | 608.58 | tag: favorite-boost; first favorite-boost win held to settlement |
+| 2026-06-26 | Ecuador vs Germany settled (NO @ Germany, ECU win) | +43.67 | 652.25 | tag: favorite-fade; fade basket now 2/3 held to settlement |
 
 ---
 

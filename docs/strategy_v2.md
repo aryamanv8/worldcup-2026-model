@@ -142,6 +142,21 @@ forward 2026 evidence. Operationalized in `morning.sh`: derived sleeve restricte
 ≈2% per bet), corrected edge + all guards still required. Revisit after a dozen-ish
 live settlements; turn off if it underperforms.
 
+**Over/under 1.5 (in progress, 2026-06-24).** Passes the calibration gate but was
+never P&L-tested (odds unarchived). `scripts/fetch_goals_odds.py` was extended to also
+capture the Over/Under tab and parse the 1.5 line (with raw-capture fallback, since
+O/U layouts are finicky). Once `over15/under15` are filled in `wc_goals_odds.csv`,
+re-run `scripts/31_backtest_derived_strategy.py` — it already prices `over_1.5`. Expect
+a lopsided market (over-1.5 is usually 75–85% likely); edge after vig is unlikely but
+worth measuring. Not live until backtested.
+
+**Progression sleeve (turned on tiny, 2026-06-24).** Can't be backtested (no historical
+futures-odds snapshots), and the live run found no entry candidates (consistent with
+Stage 2's no-edge-on-liquid-outrights). Decision: run it as a TINY LIVE EXPERIMENT like
+BTTS — `05_price_advance_markets.py --max-deploy 0.06 --position-cap 0.02`, champion
+take-profit-only, all guards on. It will mostly find nothing; the take-profit rule is
+the part worth observing if an early-round entry ever fires.
+
 ---
 
 ## 6. Sizing and risk (revised 2026-06-24)

@@ -3,3 +3,4 @@ settled,match,ticker,outcome,side,model_fv,entry,closing,winner,bet_won,realized
 2026-06-18,Austria vs Jordan,KXWCGAME-26JUN17AUTJOR-AUT,Austria,no,0.4300,0.27,,AUT,0,-28.67,favorite-fade
 2026-06-21,Turkiye vs Paraguay,KXWCGAME-26JUN19TURPAR-PAR,Paraguay,yes,0.4230,0.24,,PAR,1,93.40,favorite-fade
 2026-06-24,Norway vs Senegal,KXWCGAME-26JUN22NORSEN-NOR,Norway,yes,0.5050,0.44,,NOR,1,17.36,favorite-boost
+2026-06-26,Ecuador vs Germany,KXWCGAME-26JUN25ECUGER-GER,Germany,no,0.6140,0.45,,ECU,1,43.67,favorite-fade

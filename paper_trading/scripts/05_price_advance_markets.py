@@ -80,13 +80,13 @@ def kelly_stake(p, a, bankroll, frac=KELLY_FRACTION, cap=POSITION_CAP):
     return min(frac * f * bankroll, cap * bankroll), f
 
 
-def entry_candidate(model_fv, market_devig, yes_ask, bankroll, fee_fn, w):
+def entry_candidate(model_fv, market_devig, yes_ask, bankroll, fee_fn, w, position_cap=POSITION_CAP):
     """BUY-YES progression entry on CORRECTED edge. Returns dict or None."""
     fv = corr.blend(model_fv, market_devig, w)
     a = float(yes_ask)
     if not (0 < a < 1) or fv <= a:
         return None
-    stake, f_star = kelly_stake(fv, a, bankroll)
+    stake, f_star = kelly_stake(fv, a, bankroll, cap=position_cap)
     contracts = int(stake // a)
     if contracts <= 0:
         return None
@@ -130,13 +130,16 @@ def take_profit_action(pos, current_bid, corrected_fv, fee_fn):
             "marked_pnl_if_sell": round(marked_pnl, 2)}
 
 
-def run(bankroll: float, w: float, show_all: bool) -> int:
+def run(bankroll: float, w: float, show_all: bool,
+        max_deploy: float = 0.06, position_cap: float = 0.02) -> int:
     fee = _load(FEE_MODEL, "fee26")
     if not MVM.exists():
         raise SystemExit(f"missing {MVM} — run scripts 22 then 23 on the Mac to refresh "
                          f"the outright/advance market snapshot first.")
     mvm = pd.read_parquet(MVM)
-    print(f"Loaded {len(mvm)} progression contracts from {MVM.name}\n")
+    print(f"Loaded {len(mvm)} progression contracts from {MVM.name}")
+    print(f"TINY EXPERIMENT: deploy_cap {max_deploy:.0%} · position_cap {position_cap:.0%} "
+          f"· blend_w {w} (no backtest exists for this sleeve)\n")
 
     # ---- entry candidates (earlier-round contracts; corrected edge) ----------
     entries = []
@@ -144,12 +147,22 @@ def run(bankroll: float, w: float, show_all: bool) -> int:
         if r["contract"] not in ENTRY_CONTRACTS:
             continue
         c = entry_candidate(r["model_fv"], r["market_devig"], r["yes_ask"],
-                            bankroll, fee.taker_fee, w)
+                            bankroll, fee.taker_fee, w, position_cap=position_cap)
         if c:
             c.update({"contract": r["contract"], "team": r["team"],
                       "ticker": r["market_ticker"], "tag": "progression"})
             entries.append(c)
     entries.sort(key=lambda x: x["net_edge"], reverse=True)
+    # total-deploy cap across the sleeve (greedy by edge)
+    kept, deferred, spent = [], [], 0.0
+    for e in entries:
+        if spent + e["total_cost"] <= max_deploy * bankroll + 1e-9:
+            kept.append(e); spent += e["total_cost"]
+        else:
+            deferred.append({**e, "deferred_reason": f"deploy cap {max_deploy:.0%}"})
+    if deferred:
+        print(f"[cap] {len(deferred)} entry(ies) deferred by the {max_deploy:.0%} deploy cap")
+    entries = kept
 
     # ---- take-profit on held progression positions ---------------------------
     tp_actions = []
@@ -249,9 +262,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--bankroll", type=float, default=500.0)
     ap.add_argument("--blend-w", type=float, default=corr.DEFAULT_BLEND_W)
+    ap.add_argument("--max-deploy", type=float, default=0.06,
+                    help="total cost cap for the progression sleeve (frac of bankroll)")
+    ap.add_argument("--position-cap", type=float, default=0.02,
+                    help="per-position cap (frac of bankroll) — tiny experiment")
     ap.add_argument("--show-all", action="store_true")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     if a.selftest:
         raise SystemExit(_selftest())
-    raise SystemExit(run(a.bankroll, a.blend_w, a.show_all))
+    raise SystemExit(run(a.bankroll, a.blend_w, a.show_all, a.max_deploy, a.position_cap))
