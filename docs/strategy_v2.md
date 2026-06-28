@@ -67,7 +67,7 @@ simulation, so its native outputs are richer than the one surface we've used.
 
 | Sleeve | Source | Status | Plan |
 |---|---|---|---|
-| Moneyline (win in reg.) | score matrix W/D/L | live, calibrated | Keep, but price via corrected edge. Expect far fewer signals — that's correct. |
+| Moneyline (win in reg.) | score matrix W/D/L | live, validated | Keeps its **reliable-zone + 3¢** discipline (NOT the market-blend correction — that's for the unvalidated sleeves). It made +$152 live on this logic; don't change a working sleeve mid-tournament. |
 | **Totals (over/under goals)** | `total_over_prob(grid, line)` | **new** | Highest-value: it's literally a goals model and Kalshi `KXWCTOTAL` lines are liquid. **Gated on §4 calibration backtest passing.** |
 | **BTTS (both teams to score)** | `btts_prob(grid)` | **new** | Same gate as totals. `KXWCBTTS` markets exist and are liquid. |
 | **Advance / make-knockouts** | `tournament_probs.parquet` | **new** | Price team-to-advance and round-reached vs market; less efficient than the headline winner market. |
@@ -150,12 +150,35 @@ re-run `scripts/31_backtest_derived_strategy.py` — it already prices `over_1.5
 a lopsided market (over-1.5 is usually 75–85% likely); edge after vig is unlikely but
 worth measuring. Not live until backtested.
 
-**Progression sleeve (turned on tiny, 2026-06-24).** Can't be backtested (no historical
-futures-odds snapshots), and the live run found no entry candidates (consistent with
-Stage 2's no-edge-on-liquid-outrights). Decision: run it as a TINY LIVE EXPERIMENT like
-BTTS — `05_price_advance_markets.py --max-deploy 0.06 --position-cap 0.02`, champion
-take-profit-only, all guards on. It will mostly find nothing; the take-profit rule is
-the part worth observing if an early-round entry ever fires.
+**Progression sleeve — GATED OFF (2026-06-28 review).** The live run on 2026-06-28
+exposed the flaw: its model probabilities come from the **frozen pre-tournament sim**
+(`tournament_probs.parquet`, dated 2026-06-11). As teams are eliminated those probs go
+stale — it suggested **Scotland to reach R16 at a 1¢ market** (model 21% vs market 1%),
+a fake edge on a team that's essentially out. Fixes applied to `05_price_advance_markets.py`:
+a **staleness gate** (refuses new entries when the sim is >2 days old — it always is now)
+and a **divergence guard** (suppress |model−market| > 0.12). So the sleeve is safe but
+effectively off for entries; it still monitors take-profit on any held position.
+
+*Path to revive (knockout-rollforward recompute — not yet built):* the group stage is
+over, so the fix is NOT re-simulating groups. Take the **actual R32 bracket** (the
+fixtures are already in the Kalshi feed, e.g. South Africa–Canada, Brazil–Japan, …) and
+roll it forward with the frozen *match* model (`simulate_knockout_match` repeated),
+aggregating reach-round / champion probabilities. Write to `tournament_probs.parquet`,
+then re-run 23 → 05. Eliminated teams then correctly show ~0%. Deferred deliberately:
+it needs the live bracket + a Mac run to verify, and this sleeve had no validated edge
+anyway (Stage 2). Build it as a focused, verified task if/when the sleeve is wanted.
+
+**Over/under 1.5 — SHELVED (2026-06-28).** The scraper's "O/U tab" click landed on the
+head-to-head *stats* page, not the odds table, so no real over/under odds were collected
+(the 2 stray values were garbage and have been cleared from `wc_goals_odds.csv`). over-1.5
+hits ~80% of matches, leaving little room for edge after vig, so this isn't worth more
+scraping effort. BTTS remains the only live goals experiment.
+
+**Moneyline knockout fix (2026-06-28).** R32 market titles are
+`"<A> vs <B>: Regulation Time Moneyline"`; the team parser was reading team B as
+`"Canada: Regulation Time Moneyline"` and skipping every knockout match. Fixed in
+`01_discover_match_markets.py` (`_clean_team`). Knockout markets settle on the
+regulation winner — exactly the model's W/D/L — so no other change is needed.
 
 ---
 

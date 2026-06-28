@@ -196,11 +196,24 @@ def date_from_token(tok):
         return None
 
 
+def _clean_team(s):
+    """Strip market-type descriptors that ride along on knockout titles, e.g.
+    'Canada: Regulation Time Moneyline' -> 'Canada', 'Brazil Winner?' -> 'Brazil'.
+    Team names never contain ':' so cutting there is safe; also drop trailing
+    market words (Moneyline/Winner/Regulation/Time/Spread/Total/...)."""
+    if not s:
+        return None
+    s = s.split(":")[0]                                   # drop ': Regulation Time Moneyline'
+    s = re.sub(r"\s+(regulation\s+time\s+)?(moneyline|winner\??|spread|total|"
+               r"both teams to score|btts)\s*$", "", s, flags=re.I)
+    return s.strip() or None
+
+
 def parse_teams(title):
     title = re.sub(r"\s*\(.*?\)\s*", " ", title or "").strip()
     parts = VS_RE.split(title, maxsplit=1)
     if len(parts) == 2:
-        return parts[0].strip() or None, parts[1].strip() or None
+        return _clean_team(parts[0]), _clean_team(parts[1])
     return None, None
 
 

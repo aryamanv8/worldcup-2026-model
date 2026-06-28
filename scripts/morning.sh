@@ -64,8 +64,11 @@ step "price derived"        uv run python paper_trading/scripts/04_price_derived
                                 --max-deploy 0.06 --position-cap 0.02
 step "discover outrights"   uv run python scripts/22_kalshi_discover.py
 step "map model-vs-market"  uv run python scripts/23_map_model_vs_market.py
-# Progression sleeve = TINY LIVE EXPERIMENT (no backtest possible — no historical
-# futures-odds snapshots). Champion is take-profit-only; entries capped ~2%/~6%.
+# Progression sleeve = TINY LIVE EXPERIMENT, currently GATED OFF for entries: its
+# model probs come from the frozen pre-tournament sim, which goes stale as teams are
+# eliminated (it once suggested Scotland to reach R16 at 1¢). Script 05's staleness
+# gate refuses new entries until the live-advancement recompute refreshes the sim;
+# it still runs to monitor take-profit on any held positions. Champion take-profit-only.
 step "price advance"        uv run python paper_trading/scripts/05_price_advance_markets.py \
                                 --bankroll "$BANKROLL" --max-deploy 0.06 --position-cap 0.02
 

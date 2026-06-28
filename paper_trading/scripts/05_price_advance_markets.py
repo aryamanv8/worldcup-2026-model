@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,7 +48,12 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
 DATA = REPO_ROOT / "paper_trading" / "data"
-MVM = REPO_ROOT / "data" / "processed" / "model_vs_market.parquet"
+PROCESSED = REPO_ROOT / "data" / "processed"
+MVM = PROCESSED / "model_vs_market.parquet"
+# The MODEL side of MVM comes from this frozen pre-tournament simulation. As teams
+# are eliminated it goes STALE (a knocked-out team still shows a non-zero reach prob),
+# which manufactures fake edges vs a market that already knows the team is out.
+SIM_SOURCE = PROCESSED / "tournament_probs.parquet"
 PORTFOLIO = REPO_ROOT / "paper_trading" / "portfolio.json"
 FEE_MODEL = REPO_ROOT / "scripts" / "26_fee_model.py"
 CORRECTION = HERE / "lib_correction.py"
@@ -56,6 +62,8 @@ NET_EDGE_MIN = 0.03
 MIN_STAKE = 5.0
 KELLY_FRACTION = 0.25
 POSITION_CAP = 0.10
+STALE_DAYS = 2.0          # if the advancement sim is older than this, refuse new entries
+MAX_DIVERGENCE = 0.12     # suppress an entry if |model − market| exceeds this
 # Entry is allowed on earlier-round contracts; champion is take-profit-only by default.
 ENTRY_CONTRACTS = {"reach_round_of_16", "reach_quarter_final", "reach_semi_final", "reach_final"}
 # Take-profit: sell when sellable price >= corrected fair value (edge realized) OR
@@ -131,7 +139,8 @@ def take_profit_action(pos, current_bid, corrected_fv, fee_fn):
 
 
 def run(bankroll: float, w: float, show_all: bool,
-        max_deploy: float = 0.06, position_cap: float = 0.02) -> int:
+        max_deploy: float = 0.06, position_cap: float = 0.02,
+        max_divergence: float = MAX_DIVERGENCE, allow_stale: bool = False) -> int:
     fee = _load(FEE_MODEL, "fee26")
     if not MVM.exists():
         raise SystemExit(f"missing {MVM} — run scripts 22 then 23 on the Mac to refresh "
@@ -139,13 +148,32 @@ def run(bankroll: float, w: float, show_all: bool,
     mvm = pd.read_parquet(MVM)
     print(f"Loaded {len(mvm)} progression contracts from {MVM.name}")
     print(f"TINY EXPERIMENT: deploy_cap {max_deploy:.0%} · position_cap {position_cap:.0%} "
-          f"· blend_w {w} (no backtest exists for this sleeve)\n")
+          f"· blend_w {w} (no backtest exists for this sleeve)")
+
+    # ---- STALENESS GATE ----------------------------------------------------
+    # The advancement model probs are frozen pre-tournament. Once teams are knocked
+    # out, those probs are wrong (e.g. an eliminated team still shows reach_R16 > 0),
+    # so the "edge" vs the market is fake. Refuse NEW entries when the sim is stale.
+    sim_age = (time.time() - SIM_SOURCE.stat().st_mtime) / 86400 if SIM_SOURCE.exists() else 1e9
+    stale = sim_age > STALE_DAYS
+    if stale and not allow_stale:
+        print(f"\n*** ADVANCEMENT SIM IS STALE ({sim_age:.1f} days old > {STALE_DAYS}) ***")
+        print("    Model reach-round probs predate eliminations, so any 'edge' is fake")
+        print("    (this is what suggested Scotland to reach R16 at a 1¢ market).")
+        print("    NO new entries will be emitted. Refresh with the live-advancement")
+        print("    recompute, or pass --allow-stale to override (not recommended).")
 
     # ---- entry candidates (earlier-round contracts; corrected edge) ----------
-    entries = []
+    entries, suppressed = [], []
     for _, r in mvm.iterrows():
         if r["contract"] not in ENTRY_CONTRACTS:
             continue
+        if stale and not allow_stale:
+            continue  # gate closed
+        div = abs(float(r["model_fv"]) - float(r["market_devig"]))
+        if div > max_divergence:
+            suppressed.append((r["team"], r["contract"], div))
+            continue  # model disagrees too hard with the market => model is wrong
         c = entry_candidate(r["model_fv"], r["market_devig"], r["yes_ask"],
                             bankroll, fee.taker_fee, w, position_cap=position_cap)
         if c:
@@ -153,6 +181,10 @@ def run(bankroll: float, w: float, show_all: bool,
                       "ticker": r["market_ticker"], "tag": "progression"})
             entries.append(c)
     entries.sort(key=lambda x: x["net_edge"], reverse=True)
+    if suppressed:
+        print(f"[divergence] suppressed {len(suppressed)} entry(ies) "
+              f"(|model−market| > {max_divergence:.2f}): "
+              + ", ".join(f"{t} {c} Δ{d:.2f}" for t, c, d in suppressed[:5]))
     # total-deploy cap across the sleeve (greedy by edge)
     kept, deferred, spent = [], [], 0.0
     for e in entries:
@@ -266,9 +298,14 @@ if __name__ == "__main__":
                     help="total cost cap for the progression sleeve (frac of bankroll)")
     ap.add_argument("--position-cap", type=float, default=0.02,
                     help="per-position cap (frac of bankroll) — tiny experiment")
+    ap.add_argument("--max-divergence", type=float, default=MAX_DIVERGENCE,
+                    help="suppress entries where |model−market| exceeds this")
+    ap.add_argument("--allow-stale", action="store_true",
+                    help="override the staleness gate (NOT recommended)")
     ap.add_argument("--show-all", action="store_true")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     if a.selftest:
         raise SystemExit(_selftest())
-    raise SystemExit(run(a.bankroll, a.blend_w, a.show_all, a.max_deploy, a.position_cap))
+    raise SystemExit(run(a.bankroll, a.blend_w, a.show_all, a.max_deploy, a.position_cap,
+                         a.max_divergence, a.allow_stale))

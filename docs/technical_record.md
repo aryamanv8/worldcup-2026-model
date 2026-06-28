@@ -796,4 +796,16 @@ snapshots are not available). Champion is take-profit-only by default.
 slates; the digest spec (handoff §11) reasons over all sleeves with the correction and
 guard flags. The forecasting model remains frozen throughout — only the trading layer
 changed.
+
+**2026-06-28 review (group→knockout transition).** Book settled at $652.25 (+30.5%).
+Fixes: (1) **moneyline was silently broken for knockouts** — R32 titles
+`"<A> vs <B>: Regulation Time Moneyline"` defeated team-name parsing, skipping every
+R32 game; fixed in `01_discover_match_markets.py` (`_clean_team`); knockout markets are
+regulation-winner = the model's W/D/L, so pricing is unchanged. (2) **Advance sleeve
+gated off** — its probs are the frozen pre-tournament sim, stale after eliminations
+(suggested Scotland reach-R16 at 1¢); added a staleness gate + divergence guard to
+`05`; revive via a knockout-rollforward recompute (deferred — no validated edge). (3)
+**over_1.5 shelved** — the O/U scrape captured the H2H stats page, not odds; data
+cleared. (4) **Clarified:** moneyline keeps its reliable-zone + 3¢ discipline and does
+NOT use the market-blend correction (that's for the new sleeves).
 ```

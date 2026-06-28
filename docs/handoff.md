@@ -4,8 +4,38 @@
 as the orientation/handoff for the next working session (including a fresh Claude
 conversation). Supersedes `handoff_2026-06-15.md` (delete that file).
 
-**Last updated:** 2026-06-16 (after the historical strategy backtest).
-**Full methods + results:** `docs/technical_record.md` (backtest verdict is §12.4).
+**Last updated:** 2026-06-28 (project review at the group→knockout transition).
+**Full methods + results:** `docs/technical_record.md` (Strategy v2 is §15).
+
+---
+
+## 0. WHERE WE ARE RIGHT NOW (2026-06-28) — read first
+
+**Book:** equity **$652.25** (from $500, +30.5%), realized **+$152.25**, **fully
+settled** (0 open, 6 closed). Group stage is over; **round of 32 is starting.**
+
+**Sleeve status:**
+- **Moneyline** — the validated money-maker. Was **silently broken for knockouts**
+  (the R32 market titles `"X vs Y: Regulation Time Moneyline"` defeated the team-name
+  parser, so every R32 game was skipped as "unmapped"). **Fixed** 2026-06-28 in
+  `01_discover_match_markets.py` (`_clean_team`). Knockout markets are regulation-time
+  moneyline = exactly what the model prices, so it's correct once re-run. **Action:
+  re-run `morning.sh` to get a real knockout slate.**
+- **BTTS** — tiny live experiment (no backtest edge); runs, rarely fires. Fine.
+- **Advance/progression** — **GATED OFF.** Its model probs are the frozen June-11 sim,
+  now stale (suggested Scotland to reach R16 at 1¢). Script 05 now refuses entries when
+  the sim is stale (>2 days) and suppresses high-divergence legs. Revive only after the
+  live-advancement recompute (spec in strategy_v2 / technical_record §15).
+- **Over/under 1.5** — **shelved.** The scraper's O/U capture hit the H2H stats page,
+  not the odds table; the 2 collected values were garbage and have been cleared. Not
+  worth more effort (over-1.5 hits ~80%; little room for edge).
+
+**Doc/code note reconciled:** strategy_v2 once implied moneyline would also use the
+market-blend correction; it does NOT — moneyline keeps its validated reliable-zone +
+3¢ discipline. The correction applies to the new/unvalidated sleeves only.
+
+**Immediate to-dos:** (1) `git commit` on the Mac; (2) re-run `morning.sh` for a
+correct knockout moneyline slate; (3) review that slate and place trades as usual.
 
 ---
 
