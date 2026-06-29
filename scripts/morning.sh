@@ -72,6 +72,17 @@ step "map model-vs-market"  uv run python scripts/23_map_model_vs_market.py
 step "price advance"        uv run python paper_trading/scripts/05_price_advance_markets.py \
                                 --bankroll "$BANKROLL" --max-deploy 0.06 --position-cap 0.02
 
+# 2c) Knockout analysis layer (analysis-only; all skip gracefully until inputs exist)
+#   - structural arbitrage scan on the live champion/reach board (no bracket needed)
+#   - live knockout sim: exact reach-round/champion + continent probs (needs a complete
+#     data/processed/knockout_bracket.json — fill r32_order in bracket order)
+#   - cross-market consistency: market-internal nesting + live-model-vs-market gaps
+step "scan arbitrage"       uv run python scripts/24_scan_arbitrage.py
+step "live knockout sim"    uv run python scripts/32_live_knockout_sim.py
+step "cross-market check"   uv run python scripts/33_cross_market_consistency.py
+cp -f reports/knockout_live_probs.md "$OUT/knockout_live_probs.md" 2>>"$LOG" || true
+cp -f reports/cross_market_check.md  "$OUT/cross_market_check.md"  2>>"$LOG" || true
+
 # 3) collect today's artifacts for Claude to read
 cp -f paper_trading/portfolio.json "$OUT/portfolio.json" 2>>"$LOG" || true
 LATEST_SLATE_MD="$(ls -t paper_trading/data/trade_slate_*.md 2>/dev/null | head -1 || true)"

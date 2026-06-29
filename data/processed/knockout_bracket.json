@@ -1,0 +1,16 @@
+{
+  "_comment": "ACTUAL R32 bracket IN BRACKET ORDER, consumed by scripts/32_live_knockout_sim.py. Adjacent pairs (0,1),(2,3),... are the R32 ties; winners of (0,1) meet winners of (2,3) in R16, and so on up the tree. This file is INCOMPLETE: only 7 of 16 R32 ties are in the Kalshi feed so far, and their bracket ORDER (which tie meets which in R16) must be set from the official 2026 bracket diagram before champion numbers can be trusted. Fill r32_order with all 32 teams in bracket order, then run the sim.",
+  "_status": "TEMPLATE / INCOMPLETE — do not trust output until r32_order has 32 teams in verified bracket order",
+  "rounds": ["reach_R16", "reach_QF", "reach_SF", "reach_F", "champion"],
+  "_known_r32_ties_from_kalshi_feed_unordered": [
+    ["South Africa", "Canada"],
+    ["Brazil", "Japan"],
+    ["Germany", "Paraguay"],
+    ["Netherlands", "Morocco"],
+    ["France", "Sweden"],
+    ["Ivory Coast", "Norway"],
+    ["Mexico", "Ecuador"]
+  ],
+  "_todo": "Add the remaining 9 R32 ties (appear in the Kalshi feed as those markets open, or take from the official bracket), then arrange all 16 ties into r32_order per the bracket diagram.",
+  "r32_order": []
+}

@@ -37,6 +37,16 @@ market-blend correction; it does NOT — moneyline keeps its validated reliable-
 **Immediate to-dos:** (1) `git commit` on the Mac; (2) re-run `morning.sh` for a
 correct knockout moneyline slate; (3) review that slate and place trades as usual.
 
+**Knockout analysis layer (new, analysis-only).** `morning.sh` now also runs:
+`24_scan_arbitrage.py` (structural locks on the champion/reach board — runs now),
+`32_live_knockout_sim.py` (exact bracket-DP → live reach-round/champion + continent
+probs, replacing the stale frozen sim), and `33_cross_market_consistency.py` (market-
+internal nesting + live-model-vs-market gaps). 32/33 **skip gracefully** until
+`data/processed/knockout_bracket.json` is filled: only 7/16 R32 ties are in the Kalshi
+feed, so `r32_order` must be completed (all 32 teams, in bracket order) and verified
+against the official bracket before champion numbers are trusted. The DP and the
+checks are unit-tested (`--selftest`).
+
 ---
 
 ## 1. What this project is (30-second version)
