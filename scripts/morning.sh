@@ -58,10 +58,14 @@ step "price markets"        uv run python paper_trading/scripts/02_price_match_m
 step "calibrate derived"    uv run python scripts/30_backtest_derived_calibration.py
 # BTTS sleeve = TINY LIVE EXPERIMENT only. Script 31 found no robust edge after vig
 # (see docs/strategy_v2.md §9), so this is sized small to gather forward evidence,
-# restricted to BTTS (the only line we backtested), capped ~2%/trade, ~6% total.
+# restricted to BTTS (the only line we backtested).
+# 2026-06-29: position cap raised 0.02 -> 0.05 so quarter-Kelly governs sizing rather
+# than an artificial 2% truncation (qK on a ~3c BTTS edge is itself ~2%, so this
+# changes size only marginally). Deploy still capped ~6%. Revert to 0.02 to restore
+# the original tiny-experiment truncation.
 step "price derived"        uv run python paper_trading/scripts/04_price_derived_markets.py \
                                 --bankroll "$BANKROLL" --show-all --markets btts \
-                                --max-deploy 0.06 --position-cap 0.02
+                                --max-deploy 0.06 --position-cap 0.05
 step "discover outrights"   uv run python scripts/22_kalshi_discover.py
 step "map model-vs-market"  uv run python scripts/23_map_model_vs_market.py
 # Progression sleeve = TINY LIVE EXPERIMENT, currently GATED OFF for entries: its

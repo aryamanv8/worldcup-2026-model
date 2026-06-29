@@ -43,6 +43,7 @@ import sys
 from itertools import combinations
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -123,20 +124,39 @@ def main() -> None:
         print("\n  No soft violations either -- mids are monotonic for every team.")
 
     # ---- 2. WITHIN-ROUND DUTCH BOOK ----------------------------------------
+    # Kalshi trading fee per contract = ceil(0.07 * C * P * (1-P)) to the cent.
+    # Verified against the live slate (185 GER contracts @ 0.27 -> $2.56). A
+    # dutch book only pays if the GROSS lock survives these fees, so we report
+    # BOTH gross and net-of-fee here. NOTE: still a SNAPSHOT -- re-run close to
+    # kickoff against the freshest discover output for prices near-live.
+    def _kalshi_fee(prices: pd.Series) -> float:
+        # one contract per slot; sum per-leg ceil-to-cent fees (conservative)
+        return float(np.ceil(0.07 * prices * (1.0 - prices) * 100.0).sum() / 100.0)
+
     print("\n=== 2. Within-round dutch book (buy-all-YES / buy-all-NO) ===")
-    print(f"  {'contract':<22}{'slots':>6}{'sum_ask':>9}{'sum_bid':>9}   verdict")
+    print(f"  {'contract':<22}{'slots':>6}{'sum_ask':>9}{'sum_bid':>9}"
+          f"{'gross':>9}{'fees':>8}{'NET':>9}   verdict")
     for c, slots in SLOTS.items():
         sub = df[df["contract"] == c]
         if sub.empty:
             continue
         sum_ask = sub["yes_ask"].sum()
         sum_bid = sub["yes_bid"].sum()
-        verdict = "—"
-        if sum_ask < slots:
-            verdict = f"BUY-ALL-YES arb +{slots - sum_ask:.3f}"
-        elif sum_bid > slots:
-            verdict = f"BUY-ALL-NO arb +{sum_bid - slots:.3f}"
-        print(f"  {c:<22}{slots:>6}{sum_ask:>9.3f}{sum_bid:>9.3f}   {verdict}")
+        verdict, gross, fees, net = "—", 0.0, 0.0, 0.0
+        if sum_ask < slots:                       # buy all YES @ ask
+            gross = slots - sum_ask
+            fees = _kalshi_fee(sub["yes_ask"])
+            net = gross - fees
+            verdict = (f"BUY-ALL-YES net +{net:.3f}" if net > 0
+                       else f"buy-all-YES gross +{gross:.3f} DIES on fees")
+        elif sum_bid > slots:                     # buy all NO @ (1-bid)
+            gross = sum_bid - slots
+            fees = _kalshi_fee(1.0 - sub["yes_bid"])
+            net = gross - fees
+            verdict = (f"BUY-ALL-NO net +{net:.3f}" if net > 0
+                       else f"buy-all-NO gross +{gross:.3f} DIES on fees")
+        print(f"  {c:<22}{slots:>6}{sum_ask:>9.3f}{sum_bid:>9.3f}"
+              f"{gross:>9.3f}{fees:>8.3f}{net:>9.3f}   {verdict}")
 
     # ---- save ---------------------------------------------------------------
     if not hdf.empty:

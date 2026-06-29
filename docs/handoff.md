@@ -4,12 +4,17 @@
 as the orientation/handoff for the next working session (including a fresh Claude
 conversation). Supersedes `handoff_2026-06-15.md` (delete that file).
 
-**Last updated:** 2026-06-28 (project review at the group→knockout transition).
+**Last updated:** 2026-06-29 (R32 review session: caps/Kelly, advance-market pivot,
+arb fee-net, WebSocket plan, collaboration principle).
 **Full methods + results:** `docs/technical_record.md` (Strategy v2 is §15).
+
+> **New here? Read in this order:** (1) this §0, (2) §2 standing decisions —
+> including §2.0 the collaboration principle, (3) §4 backtest verdict, (4) §6 roadmap,
+> (5) §13 file map. Then `docs/strategy_v2.md` and `docs/technical_record.md` §12.4.
 
 ---
 
-## 0. WHERE WE ARE RIGHT NOW (2026-06-28) — read first
+## 0. WHERE WE ARE RIGHT NOW (2026-06-29) — read first
 
 **Book:** equity **$652.25** (from $500, +30.5%), realized **+$152.25**, **fully
 settled** (0 open, 6 closed). Group stage is over; **round of 32 is starting.**
@@ -41,11 +46,39 @@ correct knockout moneyline slate; (3) review that slate and place trades as usua
 `24_scan_arbitrage.py` (structural locks on the champion/reach board — runs now),
 `32_live_knockout_sim.py` (exact bracket-DP → live reach-round/champion + continent
 probs, replacing the stale frozen sim), and `33_cross_market_consistency.py` (market-
-internal nesting + live-model-vs-market gaps). 32/33 **skip gracefully** until
-`data/processed/knockout_bracket.json` is filled: only 7/16 R32 ties are in the Kalshi
-feed, so `r32_order` must be completed (all 32 teams, in bracket order) and verified
-against the official bracket before champion numbers are trusted. The DP and the
-checks are unit-tested (`--selftest`).
+internal nesting + live-model-vs-market gaps). The DP and the checks are unit-tested (`--selftest`).
+
+**Bracket COMPLETE + validated (2026-06-29).** `data/processed/knockout_bracket.json`
+now holds the full 32-team R32 in bracket order. Seeds were computed from actual
+results (`results.csv`); third-place slots assigned via FIFA's official table for the
+qualifying combination {B,D,E,F,I,J,K,L}. **All 7 R32 ties already live on Kalshi are
+reproduced exactly (incl. all 3 third-place ties), confirming both the seeding and the
+FIFA assignment.** So `32_live_knockout_sim.py` now produces real live champion /
+reach-round / continent probabilities on the next Mac run, and `33` lights up the
+model-vs-market view. (If results ever revise, recompute standings the same way.)
+
+### 2026-06-29 working-session developments (read before trading today)
+- **Sizing override (Aryaman's call):** for live discretion he can drop the standing
+  caps and size by **quarter-Kelly on full equity**. Full-Kelly was computed and
+  rejected (way too aggressive given the model over-claims edge, §4). The standing caps
+  in §2 remain the default for automated runs; cap overrides are a per-session human call.
+- **Germany NO regulation-fade dropped.** The headline 2026-06-29 R32 slate showed
+  Germany NO @ 0.27, claimed +28.5c — a favorite-fade. Removed: it's mostly a **draw
+  artifact** ("NO in regulation" pays if Germany draws in 90 then wins in ET), and on
+  the clean advance market the model looks wrong (Germany 56% model vs ~93% market).
+- **Today's placed-candidate slate (quarter-Kelly):** Netherlands YES @0.43 (~$23.70,
+  53 ctr) + Ivory Coast BTTS-NO @0.42 (~$14.43, 33 ctr). Lineup-check first. Full digest:
+  `reports/trade_ideas_2026-06-29.md`.
+- **Arb scanner now reports NET of fees.** `scripts/24_scan_arbitrage.py` was patched to
+  apply Kalshi fees (`ceil(0.07·C·p·(1-p))`) to the dutch-book check. Result on the live
+  snapshot: `reach_round_of_16` BUY-ALL-YES nets **+$0.40/unit**; `reach_final` and
+  `champion` die on fees. Still snapshot + 32-leg fill risk — needs a live book to act.
+- **`morning.sh` BTTS position cap raised 0.02 → 0.05** (so quarter-Kelly governs, not an
+  artificial 2% truncation). NOTE: re-runs on 2026-06-29 did not visibly regenerate the
+  derived slate — verify the cap actually takes effect (the embedded slate timestamp
+  wasn't advancing); may be a stale-output / cp issue worth a look.
+- **PIVOT — advance markets are the right knockout surface** (see §6 roadmap item 0).
+- **WebSocket live-pricing plan** for accurate niche-market quotes (see §6 roadmap item 0b).
 
 ---
 
@@ -73,6 +106,32 @@ The old "favorite-fade / favorite-boost" framing is RETIRED. It was a label on t
 single market we traded (per-match win-in-regulation), not a strategy. We now trade
 any market the model can price *and* has been shown to calibrate, with every edge
 corrected toward the market before we believe it.
+
+### 2.0 COLLABORATION PRINCIPLE — don't settle for a worse method just because you (Claude) can't do the best one yourself
+
+**This is a two-operator project by design (§5): Claude reasons in a sandbox with NO
+internet and NO `uv`; Aryaman runs the Mac, which has both, plus a browser and the
+ability to download files, run WebSocket/streaming clients, hit authenticated APIs, and
+do anything interactive.** When the *best* way to get data or execute an action needs a
+capability the sandbox lacks, **do NOT quietly downgrade to an inferior sandbox-only
+workaround.** Plan around the split:
+
+1. **Pick the best method first**, then decide who runs which step. If the best source is
+   a live WebSocket feed, a login-walled page, a large download, a browser action, or a
+   real order — that step is Aryaman's; design for it instead of avoiding it.
+2. **Hand Aryaman a precise, runnable artifact** (exact command, script, or steps) and
+   say what to send back (a file, a parquet, a JSON, a paste). Then build on what he
+   returns.
+3. **Name the limitation honestly** ("I can't hold a WebSocket / reach Kalshi / download
+   this from here") rather than presenting a degraded result as if it were the best
+   available. A stale REST mid is not a substitute for a live order book — say so and
+   ask for the better input.
+4. **Default to the higher-quality pipeline even if it's more setup.** A one-time Mac-side
+   script that produces clean data beats repeatedly reasoning over weak data.
+
+Examples this session: use a Mac-side WebSocket client for live quotes (not REST snapshot
+mids); let Aryaman browse/verify current Kalshi API docs; have Aryaman run the model /
+fetch / arb execution on the Mac. See §6 roadmap.
 
 Standing rules until real settled results give us reason to revisit:
 
@@ -113,23 +172,21 @@ Standing rules until real settled results give us reason to revisit:
 
 ## 3. Current portfolio (source of truth: `paper_trading/portfolio.json`)
 
+**As of 2026-06-29 — book is EMPTY and fully settled.**
+
 | Metric | Value |
 |---|---|
-| Total equity | **$515.19** |
-| Cash | $416.59 |
-| Realized P&L | +$15.19 |
-| Settled | 1 (WIN — Brazil/Morocco) |
-| Open | 3 |
+| Total equity | **$652.25** |
+| Cash | $652.25 |
+| Realized P&L | +$152.25 |
+| Settled | 6 |
+| Open | 0 |
 
-Open positions (all `favorite-fade`, i.e. one correlated bet, not three):
-
-| Fixture | Bet | Settles |
-|---|---|---|
-| Austria vs Jordan | NO @ Austria | **2026-06-17** |
-| Turkiye vs Paraguay | YES @ Paraguay | 2026-06-19 |
-| Ecuador vs Germany | NO @ Germany | 2026-06-25 |
-
-`portfolio.json` and `paper_trading/trade_log.md` were in sync as of 2026-06-16.
+Settled history (6 trades, +$152.25 net): Brazil/Morocco +15.19 (reliable, TIE),
+Austria/Jordan −28.67 (fade, LOSS), Mexico/Korea +11.30 (boost, cashout), Turkiye/
+Paraguay +93.40 (fade, WIN), Norway/Senegal +17.36 (boost, WIN), Ecuador/Germany
++43.67 (fade, WIN). Full detail in `paper_trading/trade_log.md` (in sync with
+`portfolio.json` as of 2026-06-26).
 
 ---
 
@@ -200,20 +257,44 @@ Mac is awake AND the Claude app is open.
 
 ## 6. Open threads for the next session (in priority order)
 
-0. **BUILD THE DAILY TRADE-IDEAS DIGEST (new top priority — full spec in §11).**
-   A morning routine that runs the whole pipeline and outputs a ranked list of
-   candidate trades with sizing + reasoning, including options we won't act on.
-1. **Firm up the backtest verdict.** The backtest uses a raw Elo-window reliable
-   zone; the *live* pricer (`paper_trading/scripts/02_price_match_markets.py`) uses
-   the richer model_card Elo-gap stratum gate (n≥30, |Δexp|≤0.05). Make script 29
-   use the same gate, re-run, and see if the negative-fade / fragile conclusion
-   holds. This is the single best way to trust or soften the verdict.
-2. **Conservative Phase 3 scan** (after Austria settles frees deployment room).
-   Re-run `paper_trading/scripts/02_price_match_markets.py`; apply §2 rules —
-   minimal sizing, NO new favorite-fade, lineup check first. Favorite-boost
-   candidates are the only direction the data (weakly) supports.
-3. **After all 3 open positions settle:** update `trade_log.md` §12.2 + §12.3
-   summary, write the narrative verdict, bump `technical_record.md` header date.
+**0. ADVANCE-MARKET PIVOT (new top priority — the right knockout surface).**
+Regulation moneyline is the wrong market in knockouts: a draw in 90 mins goes to ET, so
+"NO @ favorite in regulation" pays partly on draws — an artifact, not edge (this is why
+the 2026-06-29 Germany fade looked fat). Kalshi lists liquid **per-game advance markets**
+— series `KXWCROUND-26RO16` ("Will X qualify for R16"), ~90k volume — and we already
+discover them (mapped as `reach_round_of_16`/`reach_*`). What's missing is a **calibrated
+advancement model**: the live-sim probs (`32_live_knockout_sim.py`) are uncalibrated and
+currently misprice (favorites too low — Germany 56% model vs ~93% market). Plan:
+  - (a) **Backtest single-game advancement** against historical WC/Euro knockout games
+    (win-or-advance incl. ET/pens). Unlike champion futures this IS backtestable — it's a
+    binary single-match outcome, same spirit as the moneyline validation (script 29).
+  - (b) Wire live-sim advance probs into the advance pricer (`05`) with the market-blend
+    correction; gate on the calibration result like the goals sleeve.
+  - (c) Only then trade advance markets. Until calibrated, they stay informational.
+
+**0b. LIVE PRICING VIA WEBSOCKET (quote accuracy for niche markets).** Current quotes are
+REST snapshot **mids** — for thin advance/derived markets that's far from executable
+bid/ask, so those edges are rough. Kalshi has a production WS feed
+(`wss://api.elections.kalshi.com/trade-api/ws/v2`; `orderbook_snapshot`/`orderbook_delta`
++ `ticker`/`trade`; RSA-PSS handshake auth). **This is a §2.0 collaboration item:** the
+sandbox cannot hold a socket — build a **Mac-side** WS client (Aryaman runs it with his
+keys) that maintains live order books and writes `data/processed/live_quotes.parquet`;
+the pricer/arb-scanner read that instead of REST mids. Start as a read-only quote logger
+(no orders), verify, then point pricing at it.
+
+**0c. ARB EXECUTOR (guarded).** `24_scan_arbitrage.py` now reports net-of-fee dutch books
+and found `reach_round_of_16` BUY-ALL-YES at +$0.40/unit on a snapshot. To capture it
+safely needs the live book (0b) + a Mac-side executor: all-or-nothing multi-leg fill with
+unwind on partials, dry-run by default, `--execute` behind explicit confirmation, Aryaman
+holds keys. Do NOT auto-fire.
+
+1. **Firm up the backtest verdict.** Make `scripts/29_backtest_trading_strategy.py` use
+   the same model_card Elo-gap stratum gate (n≥30, |Δexp|≤0.05) as the live pricer, re-run,
+   and see if the negative-fade / fragile conclusion (§4) holds.
+2. **Verify the BTTS cap change actually took effect** (§0 note): `morning.sh` now passes
+   `--position-cap 0.05` but the derived slate didn't visibly regenerate on 2026-06-29.
+3. **Maintenance:** keep `trade_log.md` / `portfolio.json` in sync as new trades settle;
+   bump `technical_record.md` header when verdicts change.
 
 ---
 
@@ -344,12 +425,54 @@ only real after blending toward the market.
 ## 12. Session prompt (for a fresh Claude conversation)
 
 > You're picking up a Python + data-science project, worldcup-2026-model
-> (~/Projects/worldcup-2026-model). Read `docs/handoff.md` and `docs/technical_record.md`
-> §12.4 first. Scripts run with `uv run python` from the repo root, on the Mac.
-> Honor the standing decisions in handoff §2 (Strategy v2: model frozen; correct
-> every edge toward the market; trade only calibrated/gated surfaces; sleeve-specific
-> exit policy; correlation-grouped caps; lineup check first). See docs/strategy_v2.md.
-> Tell me what's settled since 2026-06-16. The likely headline task is building the
-> daily trade-ideas digest (handoff §11) — start by resolving its "execution
-> environment" design decision with me before writing code. Then propose next steps
-> from handoff §6 before doing anything.
+> (~/Projects/worldcup-2026-model). Read `CLAUDE.md`, then `docs/handoff.md` (§0, §2
+> incl. §2.0 collaboration principle, §4, §6, §13) and `docs/technical_record.md`
+> §12.4. Scripts run with `uv run python` from the repo root, **on the Mac** — your
+> sandbox has no internet and no `uv`, so follow §2.0: for anything needing live data,
+> a browser, downloads, a WebSocket, or order execution, hand me a runnable
+> command/script and build on what I send back rather than settling for a weaker
+> sandbox-only method. Honor the §2 standing decisions (model frozen; correct every
+> edge toward the market; trade only calibrated/gated surfaces; sleeve-specific exit
+> policy; correlation-grouped caps; lineup check first). Tell me what's settled since
+> the last handoff date, then propose next steps from §6 (top priority: the
+> advance-market pivot + calibration) before doing anything.
+
+---
+
+## 13. File map — where to look to understand each part
+
+**Orientation / decisions**
+- `CLAUDE.md` — short project instructions, auto-loaded by a fresh conversation.
+- `docs/handoff.md` — THIS file; living state, standing decisions, roadmap.
+- `docs/strategy_v2.md` — full rationale for the multi-sleeve / correction strategy.
+- `docs/technical_record.md` — methods + results; §12.4 backtest verdict, §15 Strategy v2.
+
+**Stage 1 — the model (frozen)**
+- `src/` + training scripts 04–10, 17, 20–21, 25 (DO NOT re-run; no-ops mid-tournament).
+- `data/processed/backtest_predictions_recalibrated.parquet` — frozen model preds.
+
+**Stage 2/3 — pricing, sleeves, paper trading**
+- `paper_trading/scripts/01_discover_match_markets.py` — Kalshi match-market discovery.
+- `paper_trading/scripts/02_price_match_markets.py` — moneyline pricer (validated sleeve).
+- `paper_trading/scripts/04_price_derived_markets.py` — goals/BTTS sleeve (corrected).
+- `paper_trading/scripts/05_price_advance_markets.py` — progression/advance sleeve (gated).
+- `paper_trading/scripts/lib_correction.py` — market-blend correction (w=0.5).
+- `paper_trading/portfolio.json` — source of truth for the book; `trade_log.md` — human log.
+- `scripts/29_backtest_trading_strategy.py` — strategy backtest engine (§4 verdict).
+- `scripts/30_backtest_derived_calibration.py` — per-line calibration gate.
+
+**Knockout analysis layer**
+- `scripts/22_kalshi_discover.py` / `23_map_model_vs_market.py` — outright/advance discovery + mapping.
+- `scripts/24_scan_arbitrage.py` — structural arb scan (now NET of fees).
+- `scripts/32_live_knockout_sim.py` — exact bracket-DP → live reach/champion probs.
+- `scripts/33_cross_market_consistency.py` — nesting + live-model-vs-market gaps.
+- `data/processed/knockout_bracket.json` — full 32-team R32 (complete + validated).
+
+**Automation (two-machine, see §5)**
+- `scripts/morning.sh` — the Mac-side pipeline; writes `reports/daily/<date>/`.
+- Claude scheduled tasks (read-only): settlement loop + trade-ideas digest (§11).
+- Output per day: `reports/daily/<date>/{STATUS.json,trade_slate.*,derived_slate.*,advance_slate.*,run.log}`
+  and `reports/trade_ideas_<date>.md`.
+
+**Roadmap stubs to build (see §6, all Mac-side):** advance-market backtest/calibration,
+`live_quotes.parquet` WebSocket logger, guarded arb executor.
