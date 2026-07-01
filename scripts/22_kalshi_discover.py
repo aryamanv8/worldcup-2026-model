@@ -1,5 +1,13 @@
 """
-22_kalshi_discover.py  (Stage 2, Step 1)
+22_kalshi_discover.py  (Stage 2, Step 1)   ***DEPRECATED — superseded by script 34***
+
+DO NOT USE for the daily pipeline. Replaced by scripts/34_market_inventory.py, which
+discovers the SAME universe exhaustively (this script probed a GUESSED series list and
+missed most families) and classifies every market via data/reference/wc_market_map.csv.
+As of 2026-07-01 morning.sh runs 34, and script 23 reads kalshi_full_inventory.parquet.
+Kept only for reference/history; safe to `git rm` once you're satisfied 34 has fully
+replaced it. Running it still works but writes the old narrow kalshi_wc_contracts.* files
+that nothing consumes anymore.
 
 Discover the live Kalshi World Cup contract universe using only PUBLIC market-data
 endpoints (no authentication, no credentials, no money). Output is the inventory

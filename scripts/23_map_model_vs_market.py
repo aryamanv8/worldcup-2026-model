@@ -20,7 +20,7 @@ count. The script PRINTS each round's raw sum so the slot assumption is auditabl
 (if RO16's raw sum is ~32 not ~16, it's actually an 'advance from group' market and
 we remap).
 
-Inputs : data/processed/kalshi_wc_contracts.parquet   (script 22, full scan)
+Inputs : data/processed/kalshi_full_inventory.parquet (script 34, unified inventory)
          data/processed/tournament_probs_live.parquet (script 32, LIVE bracket sim)
          data/processed/team_features.parquet          (static team-name universe)
 Output : data/processed/model_vs_market.parquet + console comparison per round
@@ -39,7 +39,7 @@ import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-KALSHI = REPO_ROOT / "data" / "processed" / "kalshi_wc_contracts.parquet"
+KALSHI = REPO_ROOT / "data" / "processed" / "kalshi_full_inventory.parquet"
 # MODEL side = the LIVE bracket-rollforward sim (script 32), NOT the frozen Jun-11
 # fair_values_2026. That old source went stale after eliminations and fed the advance
 # pricer fake edges (F1 in docs/architecture_audit.md). team_features is used ONLY as a

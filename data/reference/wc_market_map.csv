@@ -1,0 +1,80 @@
+series_ticker,tier,engine,family,model_output,current_pricer,notes
+KXWCGAME,A,goal_grid,match_moneyline,P(win/draw/win in reg 90),paper_trading/02_price_match_markets.py,VALIDATED — traded sleeve
+KXWCTOTAL,A,goal_grid,match_total,P(total goals over/under line),paper_trading/04_price_derived_markets.py,CALIBRATED — over_2.5 BLOCKED
+KXWCBTTS,A,goal_grid,match_btts,P(both teams score),paper_trading/04_price_derived_markets.py,CALIBRATED — tiny sizing
+KXWCADVANCE,A,bracket_sim,match_advance,P(team advances) = P(win reg)+0.5*P(draw),paper_trading/05_price_advance_markets.py,GATED — rule-based take-profit
+KXMENWORLDCUP,B,bracket_sim,tournament_winner,P(team wins tournament),none,EDGE-CANDIDATE — sim computes it; untraded; frozen-strength skepticism
+KXWCROUND,B,bracket_sim,reach_round,P(team reaches round R),none,EDGE-CANDIDATE — same machinery as advance sleeve; highest liquidity
+KXWCSTAGEOFELIM,B,bracket_sim,stage_of_elimination,P(team eliminated at stage S),none,EDGE-CANDIDATE — per-team stage distribution from sim
+KXWCCONTINENT,B,bracket_sim,confederation_winner,P(confederation wins) = sum of member win probs,none,EDGE-CANDIDATE — aggregate of winner sim
+KXWCFURTHESTADVANCING,B,bracket_sim,furthest_of_confed,P(team is furthest-advancing of its confederation),none,EDGE-CANDIDATE — joint over confed members
+KXWCGROUPWINNER,B,bracket_sim,group_origin_winner,P(a team from group G wins tournament),none,EDGE-CANDIDATE — winner sim bucketed by original group
+KXWCTEAMH2H,B,bracket_sim,same_stage_elim,P(two named teams eliminated at same stage),none,EDGE-CANDIDATE — joint elim-stage from sim
+KXWCSTAGE,B,bracket_sim,confed_max_stage,P(confederation's best team reaches exactly stage S),none,EDGE-CANDIDATE — joint max over confed
+KXWCNOEURSA,B,bracket_sim,winner_not_eur_sa,P(winner from outside UEFA/CONMEBOL),none,EDGE-CANDIDATE — aggregate of winner sim
+KXWCFIFATOP10,B,bracket_sim,nontop10_semis,P(a non-top-10 FIFA-ranked team reaches semis),none,EDGE-CANDIDATE — aggregate reach-semis
+KXWC1STTIMEWIN,B,bracket_sim,first_time_winner,P(a never-won nation wins tournament),none,EDGE-CANDIDATE — aggregate of winner sim over eligible set
+KXWCBESTHOST,B,bracket_sim,best_host,P(host X advances furthest among USA/CAN/MEX),none,EDGE-CANDIDATE — joint over three hosts
+KXWCGROUPWINELIM,B,bracket_sim,groupwinners_eliminated,P(>= k group winners knocked out by R32),none,EDGE-CANDIDATE — aggregate count over bracket
+KXWCSPREAD,B,goal_grid,match_spread,P(margin >= handicap line),none,EDGE-CANDIDATE — F7; pure scoreline-grid margin
+KXWCMOV,B,goal_grid,margin_regtime,P(named team wins in regulation),none,EDGE-CANDIDATE — overlaps moneyline reg leg
+KXWCMOF,B,goal_grid,decided_in_reg,P(a team advances in reg) = P(not draw in 90),none,EDGE-CANDIDATE — 1 - draw prob
+KXWCTEAMTOTAL,B,goal_grid,team_total,P(team's goals >= line) from marginal Poisson,none,EDGE-CANDIDATE — per-team marginal
+KXWCSCORE,B,goal_grid,exact_score,P(exact scoreline) from joint grid,none,EDGE-CANDIDATE — high vig; edge unlikely to survive de-vig
+KXWC1H,C,goal_grid_half,first_half_result,P(1H result) — needs half-time lambda split,none,PRICEABLE w/ HT split (~45% of goals in 1H) calibration
+KXWC1HTOTAL,C,goal_grid_half,first_half_total,P(1H total over/under) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC1HSPREAD,C,goal_grid_half,first_half_spread,P(1H margin >= line) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC1HSCORE,C,goal_grid_half,first_half_score,P(1H exact score) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC1HBTTS,C,goal_grid_half,first_half_btts,P(both score in 1H) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC2H,C,goal_grid_half,second_half_result,P(2H result) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC2HTOTAL,C,goal_grid_half,second_half_total,P(2H total) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC2HSPREAD,C,goal_grid_half,second_half_spread,P(2H margin) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWC2HBTTS,C,goal_grid_half,second_half_btts,P(both score in 2H) — needs HT split,none,PRICEABLE w/ HT split calibration
+KXWCFTTS,C,goal_grid,first_to_score,P(team scores first) — Poisson race,none,PRICEABLE — timing race; secondary
+KXWCMATCHUP,C,bracket_sim_path,future_matchup,P(teams X and Y meet in round R),none,PRICEABLE — draw-path combinatorics over sim
+KXWCUSAOPPONENT,C,bracket_sim_path,usa_opponent,P(USA's round-R opponent = team Y),none,PRICEABLE — draw-path over sim
+KXWCTEAMSINGAME,C,bracket_sim_path,teams_meet,P(teams X and Y meet at any point),none,PRICEABLE — draw-path over sim
+KXWC3RDPLACE,C,bracket_sim_plus,third_place_match,P(team wins 3rd-place playoff),none,PRICEABLE — needs 3rd-place-match modeling on losing semifinalists
+KXWCKOPENALTIES,C,bracket_sim_plus,shootout_count,P(exactly k KO matches go to shootout),none,PRICEABLE — combine sim path w/ per-match P(draw in reg)
+KXWCTOTALGOAL,C,sim_aggregate,tournament_total_goals,P(all-team goal total >= T),none,PRICEABLE — aggregate expected goals over remaining sim
+KXWCTEAMTOTALGOALS,C,sim_plus_goal_grid,team_tournament_goals,P(team's tournament goals >= T),none,PRICEABLE — depends on run length x per-match lambda
+KXWCGAMEGOALS,C,sim_aggregate,highest_scoring_match,distribution of max match goals,none,PRICEABLE — aggregate/extreme-value over remaining matches
+KXWCGOALLEADER,D,none,player_top_scorer,—,none,OUT OF SCOPE — player-level; no model surface
+KXWCGOAL,D,none,player_to_score,—,none,OUT OF SCOPE — player-level
+KXWCPLAYERGOALS,D,none,player_goal_count,—,none,OUT OF SCOPE — player-level
+KXWCTEAMLEADGOAL,D,none,player_team_top_scorer,—,none,OUT OF SCOPE — player-level
+KXWCAWARD,D,none,player_award,—,none,OUT OF SCOPE — awards
+KXWCAWARDCOMBO,D,none,player_award_combo,—,none,OUT OF SCOPE — awards
+KXWCSOA,D,none,player_score_or_assist,—,none,OUT OF SCOPE — player-level
+KXWCAST,D,none,player_assists,—,none,OUT OF SCOPE — player-level
+KXWCGOALCOUNT,D,none,player_goal_count,—,none,OUT OF SCOPE — player-level
+KXWCGOALCOMBO,D,none,player_goal_combo,—,none,OUT OF SCOPE — player-level
+KXWCMESSIRONALDO,D,none,player_novelty,—,none,OUT OF SCOPE — player novelty
+KXWCMESSIMBAPPE,D,none,player_novelty,—,none,OUT OF SCOPE — player novelty
+KXWCMBAPPEGOALLEADER,D,none,player_novelty,—,none,OUT OF SCOPE — player novelty
+KXWCHATTRICK,D,none,player_hattrick,—,none,OUT OF SCOPE — player-level
+KXWCGOALSTREAK,D,none,player_streak,—,none,OUT OF SCOPE — player-level
+KXWCGBOOTGOALS,D,none,golden_boot_goals,—,none,OUT OF SCOPE — player-level
+KXWCGOLDENBOOTCLEAT,D,none,brand_novelty,—,none,OUT OF SCOPE — brand/novelty
+KXWCCLUBGOALS,D,none,club_goals_novelty,—,none,OUT OF SCOPE — club-attribution novelty
+KXWCGOALIEGOAL,D,none,keeper_scores,—,none,OUT OF SCOPE — novelty
+KXWCGOALIEPEN,D,none,keeper_shootout,—,none,OUT OF SCOPE — novelty
+KXWCGOALEVERYGAME,D,none,player_every_game,—,none,OUT OF SCOPE — player-level
+KXWCRECORD,D,none,goal_record,—,none,OUT OF SCOPE — player record
+KXWCOLIMPICO,D,none,olimpico_novelty,—,none,OUT OF SCOPE — novelty
+KXWCSTART,D,none,player_starts,—,none,OUT OF SCOPE — lineup/player
+KXWCFASTESTGOAL,D,none,fastest_goal,—,none,OUT OF SCOPE — trivia
+KXWCWINNERTRAIL,D,none,winner_never_trails,—,none,OUT OF SCOPE — needs in-match trailing dynamics; infeasible
+KXWCCORNERS,D,none,corners,—,none,OUT OF SCOPE — corners; goals model has no view
+KXWCTCORNERS,D,none,team_corners,—,none,OUT OF SCOPE — corners
+KXWORLDCUPHALFTIME,D,none,halftime_show,—,none,OUT OF SCOPE — off-field entertainment
+KXWCFIRSTSONG,D,none,halftime_song,—,none,OUT OF SCOPE — off-field entertainment
+KXTRUMPATTEND,D,none,off_field_novelty,—,none,OUT OF SCOPE — off-field
+KXTRUMPWORLDCUP,D,none,off_field_novelty,—,none,OUT OF SCOPE — off-field
+KXLATENIGHTMENTION,D,none,off_field_novelty,—,none,OUT OF SCOPE — off-field media
+KXWCPRICE,D,none,ticket_price,—,none,OUT OF SCOPE — secondary-ticket resale price
+KXWCHOST,D,none,future_host,—,none,OUT OF SCOPE — 2038 host announcement
+KXWCLONGESTPEN,D,none,longest_shootout,—,none,OUT OF SCOPE — trivia
+KXWT20WORLDCUP,X,none,other_tournament,—,none,EXCLUDE — Women's T20 cricket; not men's soccer WC
+KXT20WORLDCUP,X,none,other_tournament,—,none,EXCLUDE — T20 cricket; not men's soccer WC
+KXMWORLDCUP,X,none,other_tournament,—,none,EXCLUDE — not the 2026 men's soccer WC series

@@ -66,7 +66,7 @@ step "calibrate derived"    uv run python scripts/30_backtest_derived_calibratio
 step "price derived"        uv run python paper_trading/scripts/04_price_derived_markets.py \
                                 --bankroll "$BANKROLL" --show-all --markets btts \
                                 --max-deploy 0.06 --position-cap 0.05
-step "discover outrights"   uv run python scripts/22_kalshi_discover.py
+step "market inventory"     uv run python scripts/34_market_inventory.py
 # Live knockout sim MUST run BEFORE script 23 and the advance pricer: it is now the single
 # MODEL source for progression markets (F1 in docs/architecture_audit.md). It rolls the
 # ACTUAL 32-team bracket forward through the frozen match model (exact DP), writing
