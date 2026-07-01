@@ -40,6 +40,7 @@ reports/trade_ideas_*.md
 reports/derived_calibration_*.md
 reports/cross_market_check.md
 reports/knockout_live_probs.md
+reports/market_inventory.md
 
 # Daily-regenerated DATA artifacts. These are recreated by morning.sh from the network
 # + frozen model, so they don't need to live in git and were the main source of noisy
@@ -55,6 +56,8 @@ data/processed/shootouts.parquet
 data/processed/goalscorers.parquet
 data/processed/kalshi_wc_contracts.parquet
 data/processed/kalshi_wc_contracts.csv
+data/processed/kalshi_full_inventory.parquet
+data/processed/kalshi_full_inventory.csv
 data/processed/model_vs_market.parquet
 data/processed/tournament_probs_live.parquet
 data/processed/live_2026_scorecard_log.csv
