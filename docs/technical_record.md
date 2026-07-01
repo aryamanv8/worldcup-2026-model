@@ -6,7 +6,7 @@
 > instruction to a model and the skeleton and all load-bearing facts are present.
 >
 > **Author:** Aryaman Verma (CMU; applied math + computational finance).
-> **Last updated:** 2026-06-15.
+> **Last updated:** 2026-07-01.
 > **Status:** **Stage 1 COMPLETE and validated at tournament level. Stage 2
 > (market-side) COMPLETE** — Kalshi data feed, model-vs-market mapping, fee model,
 > model-free arbitrage scanners, and dashboard built; no tradeable edge found on
@@ -14,6 +14,42 @@
 > experiment on per-match markets) IN PROGRESS**, started 2026-06-12 — see §12.
 > **Live model validation (§13) IN PROGRESS** — frozen model predictions scored
 > against real 2026 results as the tournament unfolds.
+>
+> **Operational state lives elsewhere:** current book, standing decisions, and roadmap
+> are in `docs/handoff.md`; the append-only change history is `docs/decisions.md`; the
+> Kalshi market universe we can price is `docs/market_map.md`. This file is methods/results.
+
+---
+
+## 0. What changed since 2026-06-15 (currency note)
+
+This record's methods sections (§1–§14) predate the knockout phase; they remain accurate
+for the frozen model but do not describe the live-knockout machinery or the 2026-06/07
+trading-layer changes. Summary of what's new, with pointers (full rationale in
+`docs/decisions.md`):
+
+- **Live knockout simulator** (`scripts/32_live_knockout_sim.py`) — exact bracket-DP that
+  rolls the *actual* 32-team bracket forward through the frozen match model, producing live
+  reach-round / champion / continent probabilities. Replaced the stale pre-tournament sim as
+  the single progression-probability source (**F1**, 2026-07-01). Eliminated teams drop out;
+  reach probabilities stay current as results come in.
+- **Advance-market pivot** (2026-06-29) — regulation moneyline is the wrong knockout surface
+  (a 90-min draw goes to ET, so "NO in regulation" pays partly on draws — artifact, not
+  edge). Per-game *advance* markets are the right surface; priced by
+  `paper_trading/05_price_advance_markets.py`, gated pending single-game advancement
+  calibration.
+- **Unified market inventory + map** (**F2**, 2026-07-01) — `scripts/34_market_inventory.py`
+  discovers the full live Kalshi WC board (77 series, ~4,290 markets) and classifies every
+  series via `data/reference/wc_market_map.csv` into priceability tiers. We actively price 4
+  surfaces; 18 more are priceable-but-uncovered "tier-B" edge candidates. See §7-adjacent
+  note and `docs/market_map.md`.
+- **OPEN — frozen strength vs knockout refresh (F3).** The bracket is live but team strength
+  is frozen at June values, so the live sim disagrees with the market by 40–55 pts on reach
+  markets (2026-07-01: France reach-QF 33% model vs 88% market). This is the model being
+  stale on group-stage form, not edge — it gates trading any tier-B surface. Undecided.
+- **Automation/hygiene:** daily pipeline (`scripts/morning.sh`) retimed to 10:30 local via
+  launchd, with the Claude settle+digest routine at ~10:54; git no longer tracks regenerated
+  data/reports (**F5**); one decision log added (**F4/F6** cleanups recorded there).
 
 ---
 

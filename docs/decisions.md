@@ -91,6 +91,14 @@ STAGE-1 (frozen, do-not-run), BACKTEST, DEBUG (verified unreferenced), or DEPREC
 Achieves F6's goal — make the live surface obvious — without breakage. (Physical move
 remains available later if desired, with a `parents[1]→parents[2]` fix.)
 
+## 2026-07-01 — Doc-currency pass + report untracking
+**Status: DONE.**
+`technical_record.md` bumped to 2026-07-01 with a §0 currency note (live sim, advance
+pivot, F1/F2 map, open F3, automation) — methods sections untouched. Untracked leftover
+regenerated reports still in git after F5 (`cross_market_check.md`, stale
+`derived_calibration_*.md`); `figures/` + backtest CSVs kept (durable). Health check
+confirmed `trade_log.md` ↔ `portfolio.json` in sync (cash $652.25, 0 open, 6 settled).
+
 ---
 
 ## Backlog (decided-to-do, not yet done)
