@@ -67,22 +67,24 @@ step "price derived"        uv run python paper_trading/scripts/04_price_derived
                                 --bankroll "$BANKROLL" --show-all --markets btts \
                                 --max-deploy 0.06 --position-cap 0.05
 step "discover outrights"   uv run python scripts/22_kalshi_discover.py
+# Live knockout sim MUST run BEFORE script 23 and the advance pricer: it is now the single
+# MODEL source for progression markets (F1 in docs/architecture_audit.md). It rolls the
+# ACTUAL 32-team bracket forward through the frozen match model (exact DP), writing
+# data/processed/tournament_probs_live.parquet — eliminated teams drop out, reach-round
+# probs stay current. Script 23 melts this into model_vs_market; 05/24/33 all read that.
+step "live knockout sim"    uv run python scripts/32_live_knockout_sim.py
 step "map model-vs-market"  uv run python scripts/23_map_model_vs_market.py
-# Progression sleeve = TINY LIVE EXPERIMENT, currently GATED OFF for entries: its
-# model probs come from the frozen pre-tournament sim, which goes stale as teams are
-# eliminated (it once suggested Scotland to reach R16 at 1¢). Script 05's staleness
-# gate refuses new entries until the live-advancement recompute refreshes the sim;
-# it still runs to monitor take-profit on any held positions. Champion take-profit-only.
+# Progression sleeve = TINY LIVE EXPERIMENT. Previously gated off because its probs came
+# from the frozen pre-tournament sim; now wired to the live sim, so entries are allowed
+# again (still corrected toward market, +3c gate, divergence-guarded, tiny-sized).
+# Champion is take-profit-only. Expect a near-empty slate — reach markets are efficient.
 step "price advance"        uv run python paper_trading/scripts/05_price_advance_markets.py \
                                 --bankroll "$BANKROLL" --max-deploy 0.06 --position-cap 0.02
 
 # 2c) Knockout analysis layer (analysis-only; all skip gracefully until inputs exist)
 #   - structural arbitrage scan on the live champion/reach board (no bracket needed)
-#   - live knockout sim: exact reach-round/champion + continent probs (needs a complete
-#     data/processed/knockout_bracket.json — fill r32_order in bracket order)
 #   - cross-market consistency: market-internal nesting + live-model-vs-market gaps
 step "scan arbitrage"       uv run python scripts/24_scan_arbitrage.py
-step "live knockout sim"    uv run python scripts/32_live_knockout_sim.py
 step "cross-market check"   uv run python scripts/33_cross_market_consistency.py
 cp -f reports/knockout_live_probs.md "$OUT/knockout_live_probs.md" 2>>"$LOG" || true
 cp -f reports/cross_market_check.md  "$OUT/cross_market_check.md"  2>>"$LOG" || true

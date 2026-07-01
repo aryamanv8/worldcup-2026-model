@@ -20,8 +20,9 @@ count. The script PRINTS each round's raw sum so the slot assumption is auditabl
 (if RO16's raw sum is ~32 not ~16, it's actually an 'advance from group' market and
 we remap).
 
-Inputs : data/processed/kalshi_wc_contracts.parquet (script 22, full scan)
-         data/processed/fair_values_2026.parquet     (script 21)
+Inputs : data/processed/kalshi_wc_contracts.parquet   (script 22, full scan)
+         data/processed/tournament_probs_live.parquet (script 32, LIVE bracket sim)
+         data/processed/team_features.parquet          (static team-name universe)
 Output : data/processed/model_vs_market.parquet + console comparison per round
 
 Run    : uv run python scripts/23_map_model_vs_market.py
@@ -39,8 +40,16 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 KALSHI = REPO_ROOT / "data" / "processed" / "kalshi_wc_contracts.parquet"
-FAIR = REPO_ROOT / "data" / "processed" / "fair_values_2026.parquet"
+# MODEL side = the LIVE bracket-rollforward sim (script 32), NOT the frozen Jun-11
+# fair_values_2026. That old source went stale after eliminations and fed the advance
+# pricer fake edges (F1 in docs/architecture_audit.md). team_features is used ONLY as a
+# static team-name universe for normalizing Kalshi titles — never as a prob source.
+LIVE_SIM = REPO_ROOT / "data" / "processed" / "tournament_probs_live.parquet"
+TEAM_FEATURES = REPO_ROOT / "data" / "processed" / "team_features.parquet"
 OUT = REPO_ROOT / "data" / "processed" / "model_vs_market.parquet"
+# live-sim wide columns -> model contract names
+LIVE_COL = {"reach_round_of_16": "reach_R16", "reach_quarter_final": "reach_QF",
+            "reach_semi_final": "reach_SF", "reach_final": "reach_F", "champion": "champion"}
 
 # market_ticker prefix -> (model contract name, slot count)
 PREFIX_MAP = {
@@ -85,15 +94,28 @@ def extract_raw_team(title: str) -> str | None:
 
 
 def main() -> None:
-    for p in (KALSHI, FAIR):
+    for p in (KALSHI, LIVE_SIM, TEAM_FEATURES):
         if not p.exists():
-            print(f"[FATAL] missing {p}")
+            print(f"[FATAL] missing {p}  (run script 32 first for the live sim)")
             sys.exit(1)
 
     market = pd.read_parquet(KALSHI)
     market["volume"] = pd.to_numeric(market["volume"], errors="coerce").fillna(0)
-    fair = pd.read_parquet(FAIR)
-    model_teams = fair["team"].unique().tolist()
+
+    # MODEL side: melt the LIVE knockout sim (wide: team, reach_R16, ...) into long
+    # (team, contract, fair_value). Eliminated teams are simply absent -> dropped by the
+    # inner join below, so a knocked-out team can never manufacture a fake edge.
+    live = pd.read_parquet(LIVE_SIM)
+    recs = []
+    for _, lr in live.iterrows():
+        for contract, col in LIVE_COL.items():
+            if col in live.columns:
+                recs.append({"team": lr["team"], "contract": contract,
+                             "fair_value": float(lr[col])})
+    fair = pd.DataFrame(recs)
+    # team-name universe for normalizing Kalshi titles: the static 48-team features file
+    # (never stale for names), NOT the model-probability source.
+    model_teams = pd.read_parquet(TEAM_FEATURES)["team"].unique().tolist()
     norm_lookup = {strip_accents(t).lower(): t for t in model_teams}
 
     def normalize_team(raw: str | None) -> str | None:
@@ -126,16 +148,28 @@ def main() -> None:
     market = market.dropna(subset=["team", "mid"]).copy()
 
     # --- de-vig within each round to its slot count --------------------------
+    # Each "reach round R" contract is an independent binary market whose YES mid is
+    # already ~the implied probability. Summed over all teams the fair probs equal R
+    # (exactly R teams reach round R), so a genuine OVERROUND (raw_sum > slots) is
+    # scaled DOWN to remove it. But we must NEVER scale UP: when coverage is partial
+    # (not all teams mapped, so raw_sum < slots) the old `mid*slots/raw_sum` inflated
+    # every price — pushing strong teams above 100% (e.g. Argentina reach-R16 -> 1.14),
+    # which is an impossible probability and poisons the correction layer downstream.
+    # Fix: factor = min(1, slots/raw_sum) (down-scale overround only), then hard-clip
+    # to [0, 1). Coverage n is printed so partial-mapping is auditable.
     rows = []
-    print("\n=== De-vig audit (raw mid sum should be ~slot count + overround) ===")
+    print("\n=== De-vig audit (down-scale overround only; never inflate) ===")
     for (contract, slots), grp in market.groupby(["contract", "slots"]):
         raw_sum = grp["mid"].sum()
+        factor = min(1.0, slots / raw_sum) if raw_sum > 0 else 1.0
         scaled = grp.copy()
-        scaled["market_devig"] = scaled["mid"] * slots / raw_sum
+        scaled["market_devig"] = (scaled["mid"] * factor).clip(0.0, 0.999)
         scaled["market_raw"] = scaled["mid"]
         rows.append(scaled)
+        note = "" if factor < 1.0 else "  [no down-scale: raw_sum<=slots, partial coverage]"
         print(f"  {contract:<22} n={len(grp):>2}  raw_sum={raw_sum:6.3f}  "
-              f"slots={int(slots):>2}  overround={100*(raw_sum/slots - 1):+5.1f}%")
+              f"slots={int(slots):>2}  factor={factor:.3f}  "
+              f"max_devig={scaled['market_devig'].max():.3f}{note}")
     market = pd.concat(rows, ignore_index=True)
 
     # --- join to model fair values on (team, contract) -----------------------

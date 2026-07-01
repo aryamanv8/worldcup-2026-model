@@ -1,16 +1,26 @@
 {
-  "_comment": "ACTUAL R32 bracket IN BRACKET ORDER, consumed by scripts/32_live_knockout_sim.py. Adjacent pairs (0,1),(2,3),... are the R32 ties; winners of (0,1) meet winners of (2,3) in R16, and so on up the tree. This file is INCOMPLETE: only 7 of 16 R32 ties are in the Kalshi feed so far, and their bracket ORDER (which tie meets which in R16) must be set from the official 2026 bracket diagram before champion numbers can be trusted. Fill r32_order with all 32 teams in bracket order, then run the sim.",
-  "_status": "TEMPLATE / INCOMPLETE — do not trust output until r32_order has 32 teams in verified bracket order",
+  "_comment": "COMPLETE, VALIDATED 2026 WC R32 bracket in bracket order, consumed by scripts/32_live_knockout_sim.py. Adjacent pairs (0,1),(2,3),... are the R32 ties; the tree order follows the official bracket (Wikipedia) so DP adjacency reproduces R16->QF->SF->Final.",
+  "_built": "2026-06-29 — seeds computed from actual results in data/raw/results.csv; third-place slots assigned via FIFA's official table for the qualifying combination {B,D,E,F,I,J,K,L}.",
+  "_validation": "All 7 R32 ties already live on Kalshi (South Africa-Canada, Brazil-Japan, Germany-Paraguay, Netherlands-Morocco, France-Sweden, Ivory Coast-Norway, Mexico-Ecuador) are reproduced exactly, including all three third-place ties — so the seeding AND the FIFA third-place assignment are confirmed.",
   "rounds": ["reach_R16", "reach_QF", "reach_SF", "reach_F", "champion"],
-  "_known_r32_ties_from_kalshi_feed_unordered": [
-    ["South Africa", "Canada"],
-    ["Brazil", "Japan"],
-    ["Germany", "Paraguay"],
-    ["Netherlands", "Morocco"],
-    ["France", "Sweden"],
-    ["Ivory Coast", "Norway"],
-    ["Mexico", "Ecuador"]
-  ],
-  "_todo": "Add the remaining 9 R32 ties (appear in the Kalshi feed as those markets open, or take from the official bracket), then arrange all 16 ties into r32_order per the bracket diagram.",
-  "r32_order": []
+  "r32_ties_by_match": {
+    "73": ["South Africa", "Canada"], "74": ["Germany", "Paraguay"],
+    "75": ["Netherlands", "Morocco"], "76": ["Brazil", "Japan"],
+    "77": ["France", "Sweden"], "78": ["Ivory Coast", "Norway"],
+    "79": ["Mexico", "Ecuador"], "80": ["England", "DR Congo"],
+    "81": ["United States", "Bosnia and Herzegovina"], "82": ["Belgium", "Senegal"],
+    "83": ["Portugal", "Croatia"], "84": ["Spain", "Austria"],
+    "85": ["Switzerland", "Algeria"], "86": ["Argentina", "Cape Verde"],
+    "87": ["Colombia", "Ghana"], "88": ["Australia", "Egypt"]
+  },
+  "r32_order": [
+    "Germany", "Paraguay", "France", "Sweden",
+    "South Africa", "Canada", "Netherlands", "Morocco",
+    "Portugal", "Croatia", "Spain", "Austria",
+    "United States", "Bosnia and Herzegovina", "Belgium", "Senegal",
+    "Brazil", "Japan", "Ivory Coast", "Norway",
+    "Mexico", "Ecuador", "England", "DR Congo",
+    "Argentina", "Cape Verde", "Australia", "Egypt",
+    "Switzerland", "Algeria", "Colombia", "Ghana"
+  ]
 }

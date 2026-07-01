@@ -35,6 +35,32 @@ questions.md
 # Daily auto-generated pipeline outputs (regenerated each morning by scripts/morning.sh)
 reports/daily/
 reports/trade_ideas_*.md
+# Regenerated analysis reports — rewritten/appended every run; git should hold code +
+# docs + decisions, not machine outputs. (F5 in docs/architecture_audit.md.)
+reports/derived_calibration_*.md
+reports/cross_market_check.md
+reports/knockout_live_probs.md
+
+# Daily-regenerated DATA artifacts. These are recreated by morning.sh from the network
+# + frozen model, so they don't need to live in git and were the main source of noisy
+# diffs. They are currently TRACKED — to actually stop the churn, run ONCE on the Mac:
+#   git rm --cached data/processed/{results,shootouts,goalscorers,kalshi_wc_contracts,model_vs_market,tournament_probs_live}.parquet \
+#                   data/processed/kalshi_wc_contracts.csv data/processed/live_2026_scorecard_log.csv \
+#                   data/processed/derived_calibration.json data/raw/results.csv data/raw/goalscorers.csv
+# then commit. The FROZEN inputs (poisson_v1.pkl, team_features, calibration.json,
+# model_card, training_matrix, elo_*, country_value_history, fair_values_2026,
+# simulation_results, tournament_probs) STAY tracked — they are the reproducible state.
+data/processed/results.parquet
+data/processed/shootouts.parquet
+data/processed/goalscorers.parquet
+data/processed/kalshi_wc_contracts.parquet
+data/processed/kalshi_wc_contracts.csv
+data/processed/model_vs_market.parquet
+data/processed/tournament_probs_live.parquet
+data/processed/live_2026_scorecard_log.csv
+data/processed/derived_calibration.json
+data/raw/results.csv
+data/raw/goalscorers.csv
 
 # Scraper byproducts (diagnostic dumps; the real data is data/raw/wc_goals_odds.csv)
 data/raw/results_page_*.html

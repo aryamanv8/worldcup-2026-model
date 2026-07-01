@@ -54,6 +54,14 @@ MVM = PROCESSED / "model_vs_market.parquet"
 # are eliminated it goes STALE (a knocked-out team still shows a non-zero reach prob),
 # which manufactures fake edges vs a market that already knows the team is out.
 SIM_SOURCE = PROCESSED / "tournament_probs.parquet"
+# LIVE model source (script 32): the ACTUAL 32-team bracket rolled forward through the
+# frozen match model via exact DP. This replaces the stale pre-tournament sim as the
+# model side — eliminated teams read ~0 and reach-round probs reflect real results.
+# Regenerated every morning run, so the staleness gate below now points at THIS file.
+LIVE_SIM = PROCESSED / "tournament_probs_live.parquet"
+# contract name -> column in the live-sim parquet
+LIVE_COL = {"reach_round_of_16": "reach_R16", "reach_quarter_final": "reach_QF",
+            "reach_semi_final": "reach_SF", "reach_final": "reach_F", "champion": "champion"}
 PORTFOLIO = REPO_ROOT / "paper_trading" / "portfolio.json"
 FEE_MODEL = REPO_ROOT / "scripts" / "26_fee_model.py"
 CORRECTION = HERE / "lib_correction.py"
@@ -147,6 +155,33 @@ def run(bankroll: float, w: float, show_all: bool,
                          f"the outright/advance market snapshot first.")
     mvm = pd.read_parquet(MVM)
     print(f"Loaded {len(mvm)} progression contracts from {MVM.name}")
+
+    # ---- MODEL SIDE: override with the LIVE bracket-rollforward sim (script 32) ----
+    # MVM's model_fv comes from fair_values_2026 (the frozen June-11 sim), which is
+    # stale after eliminations. Replace it with the live sim so probs reflect actual
+    # results. A team present in a reach/champion contract but ABSENT from the live sim
+    # is eliminated (or unmapped) => set its model prob to 0 so it can't manufacture a
+    # fake edge. This is what finally makes the sleeve safe to open for entries.
+    if LIVE_SIM.exists():
+        live = pd.read_parquet(LIVE_SIM)
+        lookup = {}
+        for _, lr in live.iterrows():
+            for contract, col in LIVE_COL.items():
+                if col in live.columns:
+                    lookup[(lr["team"], contract)] = float(lr[col])
+        has = mvm.apply(lambda r: (r["team"], r["contract"]) in lookup, axis=1)
+        mvm["model_fv"] = mvm.apply(lambda r: lookup.get((r["team"], r["contract"]), 0.0), axis=1)
+        priceable = mvm["contract"].isin(ENTRY_CONTRACTS | {"champion"})
+        zeroed = mvm[priceable & ~has]
+        print(f"[live-sim] model_fv overridden from {LIVE_SIM.name}: "
+              f"{int(has.sum())} matched, {len(zeroed)} priceable rows set to 0 "
+              f"(absent from live sim = eliminated/unmapped)")
+        if len(zeroed):
+            print("           zeroed (sample): "
+                  + ", ".join(sorted(set(zeroed['team'].astype(str)))[:8]))
+    else:
+        print(f"[live-sim] WARNING: {LIVE_SIM.name} missing — using STALE model_fv; "
+              f"the staleness gate below will block entries. Run script 32 on the Mac.")
     print(f"TINY EXPERIMENT: deploy_cap {max_deploy:.0%} · position_cap {position_cap:.0%} "
           f"· blend_w {w} (no backtest exists for this sleeve)")
 
@@ -154,7 +189,9 @@ def run(bankroll: float, w: float, show_all: bool,
     # The advancement model probs are frozen pre-tournament. Once teams are knocked
     # out, those probs are wrong (e.g. an eliminated team still shows reach_R16 > 0),
     # so the "edge" vs the market is fake. Refuse NEW entries when the sim is stale.
-    sim_age = (time.time() - SIM_SOURCE.stat().st_mtime) / 86400 if SIM_SOURCE.exists() else 1e9
+    # Gate on the LIVE sim's freshness (it is regenerated each morning run). If script
+    # 32 hasn't run, LIVE_SIM is missing/old and entries are correctly blocked.
+    sim_age = (time.time() - LIVE_SIM.stat().st_mtime) / 86400 if LIVE_SIM.exists() else 1e9
     stale = sim_age > STALE_DAYS
     if stale and not allow_stale:
         print(f"\n*** ADVANCEMENT SIM IS STALE ({sim_age:.1f} days old > {STALE_DAYS}) ***")
