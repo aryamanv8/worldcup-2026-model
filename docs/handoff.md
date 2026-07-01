@@ -4,20 +4,49 @@
 as the orientation/handoff for the next working session (including a fresh Claude
 conversation). Supersedes `handoff_2026-06-15.md` (delete that file).
 
-**Last updated:** 2026-06-29 (R32 review session: caps/Kelly, advance-market pivot,
-arb fee-net, WebSocket plan, collaboration principle).
+**Last updated:** 2026-07-01 (project-cleanup session: F1 single live-sim source, F2
+unified market discovery + canonical market map, F5 git hygiene; decision log added).
 **Full methods + results:** `docs/technical_record.md` (Strategy v2 is §15).
+**Change history:** `docs/decisions.md` (append-only decision log — records F1–F7).
 
 > **New here? Read in this order:** (1) this §0, (2) §2 standing decisions —
 > including §2.0 the collaboration principle, (3) §4 backtest verdict, (4) §6 roadmap,
-> (5) §13 file map. Then `docs/strategy_v2.md` and `docs/technical_record.md` §12.4.
+> (5) §13 file map. Then `docs/strategy_v2.md`, `docs/market_map.md`, and
+> `docs/technical_record.md` §12.4.
+>
+> **Which doc owns what:** this file = current state + roadmap. `decisions.md` = why/when
+> changes happened. `technical_record.md` = methods + results. `strategy_v2.md` = trading
+> strategy. `market_map.md` = which Kalshi markets we can price. If two disagree, this
+> file's §0 wins for *state*, `decisions.md` wins for *history*.
 
 ---
 
-## 0. WHERE WE ARE RIGHT NOW (2026-06-29) — read first
+## 0. WHERE WE ARE RIGHT NOW — read first
 
-**Book:** equity **$652.25** (from $500, +30.5%), realized **+$152.25**, **fully
-settled** (0 open, 6 closed). Group stage is over; **round of 32 is starting.**
+### 2026-07-01 update (cleanup session — read this first)
+- **F1 done:** progression now has ONE model source. Script 23 melts the live bracket sim
+  into `model_fv`; the stale-`fair_values` read is gone. (decisions.md · d974d8f)
+- **F2 done:** we now see the WHOLE Kalshi board. `scripts/34_market_inventory.py` +
+  `data/reference/wc_market_map.csv` classify all **77 live series** (~4,290 markets) into
+  tiers; we actively price 4, and **18 tier-B surfaces are priceable-but-uncovered edge
+  candidates** (reach-round, stage-of-elim, spread, winner, continent…). See
+  `docs/market_map.md`. Old guessed-scan (script 22) retired; 23 reads the full inventory.
+- **F5 done:** git no longer tracks daily data/report churn.
+- **F3 OPEN + now urgent:** the tier-B reach markets expose the frozen-strength limit
+  starkly (2026-07-01: France reach-QF 33% model vs 88% market, −55 pts; Morocco −50; USA
+  −40). This is the model being stale, not edge. **Decide frozen-vs-refresh before trading
+  any tier-B surface.** (decisions.md F3)
+- **Still open:** F4 (collapse 2 Claude schedules), F6 (`scripts/stage1/` for debug
+  scripts), WebSocket live-pricer, tier-B edge scan (blocked on F3).
+- **Tournament progress:** knockouts are well underway (reach-QF/SF/final markets live;
+  France/Morocco/USA advanced). The book figures below are from the 2026-06-29 review and
+  may be stale — `paper_trading/portfolio.json` is the source of truth.
+
+---
+
+**Book (as of 2026-06-29 review):** equity **$652.25** (from $500, +30.5%), realized
+**+$152.25**, **fully settled** (0 open, 6 closed). Group stage is over; **round of 32
+is starting.**
 
 **Sleeve status:**
 - **Moneyline** — the validated money-maker. Was **silently broken for knockouts**
@@ -444,6 +473,10 @@ only real after blending toward the market.
 **Orientation / decisions**
 - `CLAUDE.md` — short project instructions, auto-loaded by a fresh conversation.
 - `docs/handoff.md` — THIS file; living state, standing decisions, roadmap.
+- `docs/decisions.md` — append-only decision log (why/when changes happened; F1–F7).
+- `docs/architecture_audit.md` — script/data-flow map + findings F1–F7.
+- `docs/market_map.md` + `data/reference/wc_market_map.csv` — which Kalshi markets we can
+  price, by tier (A priced / B edge-candidate / C needs-modeling / D out-of-scope / X excl).
 - `docs/strategy_v2.md` — full rationale for the multi-sleeve / correction strategy.
 - `docs/technical_record.md` — methods + results; §12.4 backtest verdict, §15 Strategy v2.
 
@@ -461,8 +494,11 @@ only real after blending toward the market.
 - `scripts/29_backtest_trading_strategy.py` — strategy backtest engine (§4 verdict).
 - `scripts/30_backtest_derived_calibration.py` — per-line calibration gate.
 
-**Knockout analysis layer**
-- `scripts/22_kalshi_discover.py` / `23_map_model_vs_market.py` — outright/advance discovery + mapping.
+**Market discovery + knockout analysis layer**
+- `scripts/34_market_inventory.py` — UNIFIED discovery; full catalog → `kalshi_full_inventory.*`,
+  classified by `wc_market_map.csv`, flags UNKNOWN series. (Replaces 22.)
+- `scripts/23_map_model_vs_market.py` — melts live sim vs market; reads the full inventory.
+- `scripts/22_kalshi_discover.py` — **DEPRECATED** (guessed-scan; superseded by 34; deletable).
 - `scripts/24_scan_arbitrage.py` — structural arb scan (now NET of fees).
 - `scripts/32_live_knockout_sim.py` — exact bracket-DP → live reach/champion probs.
 - `scripts/33_cross_market_consistency.py` — nesting + live-model-vs-market gaps.

@@ -111,5 +111,20 @@ json.dump({"date": date, "generated": datetime.datetime.now().isoformat(),
           open(f"{out}/STATUS.json", "w"), indent=2)
 PY
 
+# 4) retention: keep only the last N days of reports/daily/ so it doesn't grow forever.
+#    (Regenerated + gitignored; the decision log + docs hold anything durable.)
+#    Portable across BSD/macOS head (no `head -n -N`): dirs are date-named, so sort =
+#    chronological (oldest first); delete the (total - N) oldest.
+RETAIN_DAYS="${RETAIN_DAYS:-30}"
+if [ -d reports/daily ]; then
+  dirs="$(ls -1d reports/daily/*/ 2>/dev/null | sort)"
+  total="$(printf '%s\n' "$dirs" | grep -c . || true)"
+  if [ "${total:-0}" -gt "$RETAIN_DAYS" ]; then
+    printf '%s\n' "$dirs" | head -n "$((total - RETAIN_DAYS))" | while read -r old; do
+      [ -n "$old" ] && rm -rf "$old" && echo "[retention] pruned ${old}" >> "$LOG"
+    done
+  fi
+fi
+
 echo "" | tee -a "$LOG"
 echo "DONE. Outputs in ${OUT}/ — now open Claude and let the morning routine read them." | tee -a "$LOG"
