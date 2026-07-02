@@ -32,10 +32,11 @@ unified market discovery + canonical market map, F5 git hygiene; decision log ad
   candidates** (reach-round, stage-of-elim, spread, winner, continent…). See
   `docs/market_map.md`. Old guessed-scan (script 22) retired; 23 reads the full inventory.
 - **F5 done:** git no longer tracks daily data/report churn.
-- **F3 OPEN + now urgent:** the tier-B reach markets expose the frozen-strength limit
-  starkly (2026-07-01: France reach-QF 33% model vs 88% market, −55 pts; Morocco −50; USA
-  −40). This is the model being stale, not edge. **Decide frozen-vs-refresh before trading
-  any tier-B surface.** (decisions.md F3)
+- **F3 RESOLVED (2026-07-01): stay frozen.** Tested frozen preds vs all 72 group games —
+  per-match calibration is good and early over/under-performance does NOT persist
+  (corr −0.11). A form refresh would fit noise. The big reach-market gaps (France 33% vs
+  88%) are sim-compounding + market recency, not fixable staleness. Tier-B reach markets are
+  INFORMATIONAL, not tradeable — and this is NOT a license to fade favorites (§4). (decisions.md F3)
 - **Still open:** F4 (collapse 2 Claude schedules), F6 (`scripts/stage1/` for debug
   scripts), WebSocket live-pricer, tier-B edge scan (blocked on F3).
 - **Tournament progress:** knockouts are well underway (reach-QF/SF/final markets live;

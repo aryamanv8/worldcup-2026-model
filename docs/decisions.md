@@ -11,17 +11,23 @@ Convention: `YYYY-MM-DD — [ID] Title` — ID matches `docs/architecture_audit.
 
 ---
 
-## 2026-07-01 — [F3] OPEN DECISION: frozen strength vs knockout form-refresh
-**Status: UNRESOLVED — gates all tier-B edge work.**
-The model and bracket are live (they know who advanced), but team *strength* is frozen at
-pre-tournament June values by design (`team_features.parquet` + model frozen for the
-tournament). Consequence, now visible on the newly-mapped reach markets: the live sim
-disagrees with the market by huge, one-directional margins (2026-07-01 cross-market check:
-France reach-QF 33% model vs 88% market, −55 pts; Morocco −50; USA −40). This is almost
-certainly the frozen model being wrong (market has group-stage info we don't), not edge.
-**The fork:** (a) accept frozen strength and only trade where corrected edge survives, or
-(b) build a controlled knockout strength-refresh (bounded update from group-stage results,
-re-validated). Do not trade any tier-B surface until this is decided. Owner: Aryaman.
+## 2026-07-01 — [F3] RESOLVED: stay frozen — refresh rejected on evidence
+**Status: DECIDED (Aryaman, 2026-07-01). Model stays frozen; no within-tournament refresh.**
+The question was whether frozen June strength is stale enough to justify a bounded
+knockout form-refresh. Tested it against all 72 group-stage games (frozen preds vs actual
+results):
+  - Per-match calibration is GOOD: top-pick accuracy 0.625 (uniform 0.333), log-loss 0.916
+    (uniform 1.099), Brier 0.544 (uniform 0.667); reliability buckets track realized rates.
+  - Some teams over/under-performed (Mexico/France/Argentina/Morocco up; Uruguay/Czechia down).
+  - DECISIVE: over/under-performance does NOT persist — corr(matchday-1 surprise, later-match
+    surprise) = −0.11 across 48 teams (≈ noise). Early form carries no signal the frozen model
+    is missing, so an Elo/form refresh would fit noise and likely worsen predictions.
+**Conclusion:** the big reach-market gaps (France 33% vs 88%) are sim-compounding over 4
+rounds + market recency/reputation pricing, NOT a fixable per-match staleness. Tier-B reach
+markets are INFORMATIONAL, not tradeable via refresh. Explicitly NOT a license to fade
+favorites (that's the §4 favorite-fade trap). Optional future confirmation: score frozen
+model on knockout fixtures directly (Mac run) — not required; group-stage evidence suffices.
+Analysis: reproducible from `live_2026_predictions.parquet` + `results.parquet`.
 
 ## 2026-07-01 — [F2] Unified market discovery + canonical market map
 **Status: DONE + committed (2e7682b).**
